@@ -77,7 +77,7 @@ tr:last-child td{border-bottom:0}
   <p class="sub">เปลี่ยน <code style="color:var(--cyan)">yoursite</code> เป็น URL จริงหลัง deploy</p>
   <div class="card grid2">
     <div class="role"><h4>👦 นักเรียน</h4><code>/index.html</code><p class="lead" style="margin-top:6px">แจก URL นี้ให้เด็ก · กรอกรหัสห้อง + ชื่อเล่น → เล่น</p></div>
-    <div class="role"><h4>🎤 วิทยากร (Host)</h4><code>/host.html</code><p class="lead" style="margin-top:6px">ล็อกอิน · คุมเกม (เริ่ม/ล็อก/เฉลย/ถัดไป)</p></div>
+    <div class="role"><h4>🎤 วิทยากร (Host)</h4><code>/host.html</code><p class="lead" style="margin-top:6px">ล็อกอิน · เห็นคำถาม+เฉลย+คำอธิบาย · คุมเกม (เลือกเวลา/เริ่ม/ล็อก/เฉลย/ผลคะแนน/ถัดไป)</p></div>
     <div class="role"><h4>📽️ จอฉาย (Presenter)</h4><code>/presenter.html?s=รหัส</code><p class="lead" style="margin-top:6px">ต่อ projector · คำถาม/เวลา/podium/เสียง</p></div>
     <div class="role"><h4>🛠️ ผู้ดูแล (Admin)</h4><code>/admin.html</code><p class="lead" style="margin-top:6px">วิเคราะห์ผล · ส่งออก CSV/XLSX · จัดการเซสชัน</p></div>
   </div>
@@ -103,11 +103,11 @@ tr:last-child td{border-bottom:0}
       <li>เปิด <b>presenter.html?s=รหัส</b> บนเครื่องต่อ projector → กด <span class="pill">🎵</span> <span class="pill">🔔</span> เปิดเสียง</li>
       <li>เขียน <b>URL + รหัสห้อง</b> บนจอ/กระดาน → ให้เด็กเปิดหน้าแรก กรอกรหัส + ชื่อเล่น</li>
       <li>ดูช่อง <b>"เข้าร่วม"</b> ที่ host ขึ้นครบ ~120 (จอฉายโชว์จำนวนผู้เล่น)</li>
-      <li><b>แตะการ์ดภารกิจ</b> (เช่น ภารกิจ 1) → เกริ่นนำสั้นๆ ด้วยปาก → กด <span class="k">▶ เริ่ม</span></li>
-      <li>เด็กตอบใน 30 วิ (จอฉายนับถอยหลัง + เสียง tick) → พอตอบครบ/หมดเวลา กด <span class="k">🔒 ล็อก</span></li>
-      <li>กด <span class="k">📊 ผลลัพธ์</span> → จอฉายขึ้น <b>เฉลย + แท่นคะแนน + คอนเฟตติ</b> → อธิบายด้วยปาก</li>
+      <li><b>แตะการ์ดภารกิจ</b> (เช่น ภารกิจ 1) → อ่าน <b>บทเกริ่นนำ 🎤</b> ที่ขึ้นบนแผง → <b>เลือกเวลาต่อข้อ</b> (20–90 วิ หรือไม่จำกัด) → กด <span class="k">▶ เริ่ม</span></li>
+      <li>เด็กตอบตามเวลาที่ตั้ง (จอฉายนับถอยหลัง + เสียง tick) — บนแผงวิทยากรจะ<b>เห็นคำถาม + เฉลย + คำอธิบาย</b>ไว้บรรยาย → พอตอบครบ/หมดเวลา กด <span class="k">🔒 ล็อก</span></li>
+      <li>กด <span class="k">💡 เฉลย</span> และ <span class="k">📊 ผลคะแนน</span> — <b>ลำดับใดก็ได้</b> แต่ละปุ่มขึ้นพร้อมกัน<b>ทั้ง 3 จอ</b> (เฉลย=คำตอบถูก+คำอธิบาย · ผลคะแนน=แท่นคะแนน+คอนเฟตติ) → อภิปรายด้วยปาก</li>
       <li>กด <span class="k">→ ถัดไป</span> ไปข้อ 2, 3 ... จนครบภารกิจ (แต่ละภารกิจ 2–3 ข้อ)</li>
-      <li>จบภารกิจ → <b>แตะการ์ดภารกิจถัดไป</b> ทำซ้ำ (ข้ามภารกิจได้ถ้าเวลาไม่พอ)</li>
+      <li>จบภารกิจ → การ์ดจะขึ้น <b>✓ เขียว</b> (เล่นแล้ว) → <b>แตะการ์ดภารกิจถัดไป</b> ทำซ้ำ (ข้าม/ย้อนกลับมาเล่นซ้ำได้)</li>
       <li>ครบ 8 + Final Boss → กด <b>"จบกิจกรรม"</b> → เด็กเห็นหน้า <b>Digital Survivor</b> 🏆</li>
     </ol>
     <div class="warn">⏱️ <b>จัดเวลา 2 ชม. / 9 ด่าน ≈ 12–13 นาที/ภารกิจ</b> — ถ้าช้า ข้ามบางภารกิจได้ (แตะการ์ดไหนก็เริ่มได้) · เน้นให้เด็ก<b>คิด+อภิปราย</b>มากกว่าตอบเร็ว</div>
@@ -115,19 +115,22 @@ tr:last-child td{border-bottom:0}
 
   <h2 class="sec" id="buttons"><span class="num">4</span> อ้างอิงปุ่มควบคุม Host</h2>
   <div class="card">
-    <div class="btnref"><b>▶ เริ่ม</b><span>เปิดคำถาม → เด็กเห็นตัวเลือก + timer เริ่มนับ</span></div>
+    <div class="btnref"><b>⏱ เลือกเวลา</b><span>ตั้งเวลาตอบต่อข้อก่อนกด "เริ่ม" — <span class="k">20/30/45/60/90 วิ</span> หรือ <span class="k">ไม่จำกัด</span> (∞ = ไม่นับถอยหลัง/ไม่ล็อกอัตโนมัติ กดล็อกเอง)</span></div>
+    <div class="btnref"><b>▶ เริ่ม</b><span>เปิดคำถาม → เด็กเห็นตัวเลือก + timer เริ่มนับตามเวลาที่ตั้ง</span></div>
     <div class="btnref"><b>🔒 ล็อก</b><span>ปิดรับคำตอบ (กันตอบเพิ่ม) — กดเมื่อตอบครบหรือหมดเวลา</span></div>
-    <div class="btnref"><b>📊 ผลลัพธ์</b><span>เฉลย + คิด XP + ขึ้นแท่นคะแนนบนจอฉาย</span></div>
-    <div class="btnref"><b>💡 เฉลย</b><span>แสดงคำอธิบาย (ใช้ตอนอภิปราย)</span></div>
+    <div class="btnref"><b>💡 เฉลย</b><span><b>อิสระ</b> — โชว์คำตอบถูก + คำอธิบาย ทั้ง 3 จอ · กดซ้ำเพื่อซ่อนได้</span></div>
+    <div class="btnref"><b>📊 ผลคะแนน</b><span><b>อิสระ</b> — คิด XP + ขึ้นแท่นคะแนน/อันดับ ทั้ง 3 จอ · กดก่อนหรือหลังเฉลยก็ได้</span></div>
     <div class="btnref"><b>→ ถัดไป</b><span>ไปคำถามข้อถัดไปของภารกิจนั้น</span></div>
     <div class="btnref"><b>🏆 จบกิจกรรม</b><span>ปิดห้อง → เด็กเห็นหน้าสรุป Digital Survivor</span></div>
     <div class="btnref"><b>✨ เซสชันใหม่</b><span>เริ่มห้องใหม่ (เซสชันเก่าดูย้อนหลังได้ที่ Admin)</span></div>
   </div>
-  <p class="sub" style="margin-left:0">ปุ่มจะสว่าง/หรี่ตามจังหวะ — ระบบเปิดเฉพาะปุ่มที่ใช้ได้ในสถานะนั้น</p>
+  <p class="sub" style="margin-left:0">ปุ่มที่กำลังโชว์บนจอจะมี<b>ขอบเขียว</b> + แผงขึ้นป้าย "✓ เฉลยขึ้นทุกจอแล้ว / 🏆 ผลคะแนนขึ้นทุกจอแล้ว" — ระบบเปิดเฉพาะปุ่มที่ใช้ได้ในสถานะนั้น</p>
 
   <h2 class="sec" id="tips"><span class="num">5</span> เคล็ดลับการดำเนินกิจกรรม</h2>
   <div class="card">
-    <div class="tip"><span class="ic">🗣️</span><div><b>เกริ่นก่อนกดเริ่ม</b> — เล่าสถานการณ์ให้เด็กอินก่อน แล้วค่อยกด ▶ เริ่ม</div></div>
+    <div class="tip"><span class="ic">🗣️</span><div><b>เกริ่นก่อนกดเริ่ม</b> — อ่าน <b>บทเกริ่นนำ 🎤</b> ที่ระบบขึ้นให้บนแผง แล้วค่อยกด ▶ เริ่ม</div></div>
+    <div class="tip"><span class="ic">⏱️</span><div><b>ตั้งเวลาให้เหมาะกับข้อ</b> — ข้อที่ต้องอ่านเยอะ/คิดวิเคราะห์ ตั้ง <b>60–90 วิ หรือไม่จำกัด</b> · ข้อง่ายๆ ใช้ 20–30 วิ (30 วิมักเร็วเกินสำหรับข้อยาว)</div></div>
+    <div class="tip"><span class="ic">👀</span><div><b>วิทยากรเห็นเฉลยบนแผงเสมอ</b> — คำตอบถูก (ติ๊ก ✓) + คำอธิบาย โชว์ให้คุณอ่านนำ ไม่ต้องจำเอง · เด็กจะเห็นก็ต่อเมื่อคุณกด 💡 เฉลย</div></div>
     <div class="tip"><span class="ic">🤔</span><div><b>หลังเฉลย เปิดวงอภิปราย</b> — "ทำไมข้อนี้ดีกว่า?" สำคัญกว่าตัวคะแนน (แนวคิดหลัก: ไม่มีถูก-ผิดตายตัว)</div></div>
     <div class="tip"><span class="ic">🏆</span><div><b>ใช้ leaderboard สร้างความสนุก</b> แต่ย้ำว่าคะแนนมาจาก<b>คุณภาพการคิด</b> ไม่ใช่ความเร็ว</div></div>
     <div class="tip"><span class="ic">⚖️</span><div><b>ภารกิจ 8 (สุขภาวะ)</b> เป็นการสะท้อนตนเอง ไม่มีถูก-ผิด — ย้ำว่าเป็น <i>Habit Profile</i> ไม่ใช่การวินิจฉัย</div></div>

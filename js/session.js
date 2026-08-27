@@ -42,7 +42,9 @@ export async function createSession(hostUid, { title = 'DIGITAL SURVIVAL', demo 
     currentMission: null,
     currentQuestion: null,
     questionStartAt: null,
-    questionDuration: 30,
+    questionDuration: 45,
+    showAnswer: false,    // เฉลยคำตอบขึ้นทุกจอ (อิสระจากผลคะแนน)
+    showResults: false,   // ผลคะแนน/อันดับขึ้นทุกจอ (อิสระจากเฉลย)
     playersJoined: 0,
     hostUid,
     createdAt: serverTimestamp(),

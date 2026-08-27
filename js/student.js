@@ -4,16 +4,16 @@
    and a phase-reactive stage that mirrors the host's session state
    machine, delegating question rendering to the game engine.
    ================================================================= */
-import { getStoredPlayer, listenPlayer, listenSession, touchPresence, clearStoredPlayer } from './session.js';
+import { getStoredPlayer, listenPlayer, listenSession, listenLeaderboard, touchPresence, clearStoredPlayer } from './session.js';
 import { loadContent, loadQuestions, levelForXp } from './content.js';
-import { onAuth } from './auth.js';
+import { onAuth, ensureStudentPersistence, ensureStudentAuth } from './auth.js';
 import { auth } from './firebase.js';
 import { icon, hydrateIcons } from './icons.js';
 import { renderGame } from './game.js';
 
 const $ = (s) => document.querySelector(s);
 const fmt = (n) => (n || 0).toLocaleString('en-US');
-const state = { content: null, questions: {}, player: null, session: null, stageKey: null };
+const state = { content: null, questions: {}, player: null, session: null, leaderboard: [], stageKey: null };
 
 /** Wait for Auth to restore the persisted (anonymous) user before listening. */
 function waitForAuth() {
@@ -29,15 +29,23 @@ async function main() {
   const stored = getStoredPlayer();
   if (!stored) { showNotJoined(); return; }
 
-  await waitForAuth();
+  // iOS Safari FIX: pin auth to localStorage BEFORE restoring, so the anonymous
+  // session from the join page is found here (IndexedDB is often blocked on
+  // iPhone / in-app browsers). Then wait for the restored user; if it truly did
+  // not survive (ephemeral storage), sign in anonymously so at least the session
+  // loads and the student can still answer (scoring is keyed by playerId).
+  await ensureStudentPersistence();
+  let user = await waitForAuth();
+  if (!user) { try { user = await ensureStudentAuth(); } catch (_e) {} }
 
   try { state.content = await loadContent(); }
   catch (_e) { state.content = { levels: [{ level: 1, nameTh: 'มือใหม่ดิจิทัล', name: 'Digital Rookie', minXp: 0 }], missions: [], badges: [] }; }
-  state.questions = await loadQuestions().catch(() => ({}));
 
   renderBadges();          // draw locked grid immediately
   renderStage();           // initial "connecting" state
 
+  // Attach live listeners IMMEDIATELY — do not wait for the question bank, so
+  // the passport + connection work even if content loads slowly (mobile).
   listenPlayer(stored.docId, (p) => {
     if (!p) { showNotJoined(); return; }
     state.player = p;
@@ -45,11 +53,26 @@ async function main() {
     renderBadges();
   }, (err) => setConn(false, err));
 
+  let gotSession = false;
   listenSession(stored.sessionId, (s) => {
+    gotSession = true;
     setConn(true);
     state.session = s;
     renderStage();
-  }, (err) => setConn(false, err));
+  }, (err) => { setConn(false, err); showConnHelp(err); });
+  // Watchdog: if no session snapshot arrives (auth/storage blocked by an in-app
+  // browser or Private mode), stop the endless "connecting" and show how to fix.
+  setTimeout(() => { if (!gotSession) showConnHelp(); }, 9000);
+
+  // อันดับคะแนน (สาธารณะ ไม่มีข้อมูลส่วนตัว) — ใช้แสดงเมื่อวิทยากรกด “ผลคะแนน”
+  listenLeaderboard(stored.sessionId, (arr) => {
+    state.leaderboard = arr || [];
+    const s = state.session;
+    if (s && s.phase === 'revealed' && s.showResults) { state.stageKey = null; renderStage(); }
+  });
+
+  // Question bank loads in the background (only needed when a question renders).
+  loadQuestions().then((q) => { state.questions = q; state.stageKey = null; renderStage(); }).catch(() => {});
 
   // Presence heartbeat (cheap): on load + every 120s while visible, plus when
   // the tab becomes visible again. Longer interval keeps writes well under the
@@ -70,8 +93,26 @@ async function main() {
 
   // Dev-only helper to preview stage states without a host (localhost)
   if (location.hostname === 'localhost') {
-    window.__dsPhase = (patch) => { state.session = { status: 'open', ...(state.session || {}), ...patch }; renderStage(); };
+    window.__dsPhase = (patch) => { state.stageKey = null; state.session = { status: 'open', ...(state.session || {}), ...patch }; renderStage(); };
   }
+}
+
+/* Localhost preview WITHOUT a real join — fakes player/questions/leaderboard. */
+if (location.hostname === 'localhost') {
+  window.__dsDemo = async (patch) => {
+    state.content = await loadContent().catch(() => ({ missions: [], levels: [], badges: [] }));
+    state.questions = await loadQuestions().catch(() => ({}));
+    state.player = { playerId: 'P021', nickname: 'วีระ', xp: 300, level: 3, progress: 3, badges: [], room: 'ม.5/1' };
+    state.leaderboard = [
+      { playerId: 'P012', nickname: 'มานี', xp: 520 }, { playerId: 'P003', nickname: 'ปิติ', xp: 480 },
+      { playerId: 'P044', nickname: 'ชูใจ', xp: 410 }, { playerId: 'P021', nickname: 'วีระ', xp: 300 },
+      { playerId: 'P077', nickname: 'สมชาย', xp: 150 },
+    ];
+    try { localStorage.setItem('ds-answers', JSON.stringify({ m4_q1: { choice: 'B', isCorrect: false } })); } catch (_e) {}
+    state.stageKey = null;
+    state.session = { status: 'open', phase: 'revealed', currentMission: 'm4', currentQuestion: 'm4_q1', questionIndex: 1, showAnswer: true, showResults: true, ...(patch || {}) };
+    renderStage();
+  };
 }
 
 /* ---------------- Passport ---------------- */
@@ -124,7 +165,8 @@ function missionByAny(v) {
   return ms.find((m) => m.id === v) || ms.find((m) => m.no === v) || null;
 }
 function gameCtx(stage, s) {
-  return { container: stage, session: s, questions: state.questions, content: state.content, stored: getStoredPlayer(), player: state.player };
+  return { container: stage, session: s, questions: state.questions, content: state.content, stored: getStoredPlayer(), player: state.player,
+    showAnswer: !!s.showAnswer, showResults: !!s.showResults, leaderboard: state.leaderboard };
 }
 
 /* ---------------- Final result — Digital Survivor (§43) ---------------- */
@@ -161,7 +203,7 @@ function renderStage() {
   const stage = $('#stage'); if (!stage) return;
   const s = state.session;
   const phase = s ? (s.phase || 'lobby') : 'connecting';
-  const key = s ? `${s.status}:${phase}:${s.currentMission || ''}:${s.currentQuestion || ''}` : 'connecting';
+  const key = s ? `${s.status}:${phase}:${s.currentMission || ''}:${s.currentQuestion || ''}:${s.showAnswer ? 1 : 0}:${s.showResults ? 1 : 0}` : 'connecting';
   if (key === state.stageKey) return;
   state.stageKey = key;
 
@@ -232,6 +274,33 @@ function showNotJoined() {
     <p>กลับไปหน้าแรกเพื่อกรอกรหัสห้องและชื่อเล่น</p>
     <a class="ds-btn ds-btn--primary" href="index.html">ไปหน้าเข้าร่วม</a>
   </section>`;
+}
+
+/** Shown when the session never loads — usually an in-app browser (LINE/กล้อง/
+    IG/FB) or Private mode blocking the login storage on iPhone. Tells the
+    student how to fix it (open in Safari directly). */
+let connHelpShown = false;
+function showConnHelp() {
+  if (connHelpShown || state.session) return; // don't override a working stage
+  connHelpShown = true;
+  const stage = $('#stage'); if (!stage) return;
+  const ua = navigator.userAgent || '';
+  const inApp = /Line\/|FBAN|FBAV|Instagram|Messenger|GSA\//i.test(ua);
+  const url = location.href.replace('student.html', 'index.html');
+  stage.innerHTML = `<div class="ds-empty">
+    <span class="ds-feat ds-feat--electric ds-ico--lg">${icon('wifiOff')}</span>
+    <h3>เชื่อมต่อไม่สำเร็จ <span class="ds-en" style="display:block;margin-top:4px">Can't connect</span></h3>
+    <p>${inApp
+      ? 'คุณกำลังเปิดในแอป (เช่น LINE/กล้อง) ซึ่งบล็อกการเข้าสู่ระบบ<br><b>แตะปุ่ม ••• หรือ ↗ มุมจอ แล้วเลือก “เปิดใน Safari”</b>'
+      : 'ลองวิธีต่อไปนี้ทีละข้อ'}</p>
+    <ol style="text-align:left;max-width:30ch;margin:8px auto 0;padding-left:20px;color:var(--text-muted);font-size:.92rem;line-height:1.9">
+      <li>เปิดลิงก์นี้ใน <b>Safari</b> โดยตรง (ไม่ใช่ในแอป)</li>
+      <li>ปิด <b>โหมดการเรียกดูแบบส่วนตัว</b> (Private) ถ้าเปิดอยู่</li>
+      <li>แล้วสแกน QR / เข้าห้องใหม่อีกครั้ง</li>
+    </ol>
+    <a class="ds-btn ds-btn--primary" href="${url}" style="margin-top:16px">เข้าห้องใหม่</a>
+  </div>`;
+  hydrateIcons(stage);
 }
 
 let offlineEl = null;

@@ -21,10 +21,15 @@ export async function loadContent() {
     This lets Admin edit questions in-app and have them take effect live. */
 export async function loadQuestions() {
   if (_questions) return _questions;
+  // Firestore override (admin edits) — but never let a slow/hanging read block
+  // loading; race it against a short timeout, then fall back to the static file.
   try {
-    const snap = await getDoc(doc(db, 'settings', 'questions'));
-    if (snap.exists() && snap.data() && snap.data().data) { _questions = snap.data().data; return _questions; }
-  } catch (_e) { /* not signed in yet / offline → fall back to file */ }
+    const snap = await Promise.race([
+      getDoc(doc(db, 'settings', 'questions')),
+      new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 3000)),
+    ]);
+    if (snap && snap.exists() && snap.data() && snap.data().data) { _questions = snap.data().data; return _questions; }
+  } catch (_e) { /* slow / not signed in / offline → fall back to file */ }
   try {
     const res = await fetch('data/questions.json', { cache: 'no-cache' });
     _questions = res.ok ? (await res.json()).questions || {} : {};

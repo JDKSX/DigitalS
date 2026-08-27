@@ -103,3 +103,12 @@
 .cube-scene .cube { position: relative; width: 100%; height: 100%; transform-style: preserve-3d; transform: rotateX(-24deg); animation: cubeSpin 18s linear infinite; }
 .cube-scene .cf { position: absolute; inset: 0; border: 1.5px solid var(--cyan); background: linear-gradient(135deg, rgba(34,211,238,.10), rgba(167,139,250,.06)); box-shadow: inset 0 0 30px rgba(34,211,238,.2); }
 @media (prefers-reduced-motion: reduce) { .cube-scene .cube { animation: none; transform: rotateX(-24deg) rotateY(-32deg); } }
+
+/* Answer card on the projector — เฉลย + คำอธิบาย (ใหญ่ อ่านง่าย) */
+.pres-answer { margin: 8px auto 0; max-width: 30ch; padding: clamp(18px,3vw,30px); border-radius: 22px;
+  background: color-mix(in srgb, var(--success, #34D399) 12%, transparent);
+  border: 2px solid color-mix(in srgb, var(--success, #34D399) 45%, transparent); }
+.pres-answer__lbl { font-family: var(--font-display); font-weight: 700; letter-spacing: .05em; color: var(--success, #34D399); font-size: clamp(.9rem,2vw,1.2rem); }
+.pres-answer__ans { font-family: var(--font-display); font-weight: 800; line-height: 1.25; margin-top: 6px; font-size: clamp(1.4rem,3.4vw,2.4rem); }
+.pres-answer__ans .ds-pid { color: var(--success, #34D399); }
+.pres-answer__ex { margin-top: 14px; font-size: clamp(1rem,1.8vw,1.35rem); line-height: 1.55; color: var(--text-muted); }

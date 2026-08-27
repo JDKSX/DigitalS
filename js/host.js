@@ -19,6 +19,9 @@ let unsubSession = null, unsubPlayers = null, unsubAnswers = null, answersQid = 
 const scoredLocal = new Set();
 const demoAnsweredQ = new Set();
 let lastLbKey = '';
+// เวลาตอบต่อข้อ (วิทยากรเลือกได้ก่อนกด “เริ่ม”). 0 = ไม่จำกัดเวลา.
+const DURATIONS = [20, 30, 45, 60, 90, 0];
+let selectedDuration = 45;
 
 /* ---------------- staff login ---------------- */
 function showLogin() {
@@ -124,6 +127,7 @@ function buildControlSkeleton() {
     <div class="ds-heading" style="margin-top:18px"><span class="ds-en">เลือกภารกิจ · missions</span></div>
     <div class="mission-grid" id="missionGrid">
       ${missions.map((m) => `<button class="m-tile" data-mid="${m.id}">
+        <span class="m-tile__done" aria-label="เล่นแล้ว">${icon('reveal')}</span>
         <span class="m-tile__ic">${icon(m.icon || 'shield')}</span>
         <span class="m-tile__no">${m.id === 'boss' ? 'BOSS' : String(m.no).padStart(2, '0')}</span>
         <span class="m-tile__t">${m.titleTh}</span></button>`).join('')}
@@ -158,23 +162,87 @@ function renderControl(s) {
     <span class="host-hint">${icon('sparkles')} ${hostHint(s)}</span>`);
   hydrateIcons($('#hostPhase'));
 
-  document.querySelectorAll('.m-tile').forEach((t) => t.classList.toggle('is-active', t.dataset.mid === s.currentMission));
+  const done = s.completedMissions || [];
+  document.querySelectorAll('.m-tile').forEach((t) => {
+    t.classList.toggle('is-active', t.dataset.mid === s.currentMission);
+    t.classList.toggle('is-done', done.includes(t.dataset.mid));
+  });
 
   const m = (state.content.missions || []).find((x) => x.id === s.currentMission);
   const cq = $('#currentQ');
   if (cq) {
     if (!s.currentMission) cq.innerHTML = `<p class="ds-muted ds-center" style="padding:16px 0">แตะภารกิจด้านบนเพื่อเริ่ม</p>`;
-    else { const total = questionCount(state.questions, s.currentMission); cq.innerHTML = `
+    else {
+      const total = questionCount(state.questions, s.currentMission);
+      const q = s.currentQuestion ? state.questions[s.currentQuestion] : null;
+      const open = s.phase === 'question_open';
+      // ซิงก์ค่าเวลาที่เลือกกับที่บันทึกในเซสชัน (เผื่อเปิดคนละแท็บ)
+      if (typeof s.questionDuration === 'number' && !open) selectedDuration = s.questionDuration;
+      cq.innerHTML = `
       <div class="ds-between" style="margin-top:6px">
         <div><span class="ds-en">${m ? m.title : ''}</span><div style="font-family:var(--font-display);font-weight:700;font-size:1.15rem">${m ? m.titleTh : s.currentMission}</div>
           <span class="ds-muted" style="font-size:.85rem">${s.currentQuestion ? `ข้อ ${s.questionIndex || 1}${total ? ' / ' + total : ''}` : (total ? `${total} ข้อ · ยังไม่เริ่ม` : 'ยังไม่มีคำถาม (เพิ่มใน questions.json)')}</span></div>
         <div class="host-timer" id="hostTimer"></div>
-      </div>`; }
+      </div>
+      ${!s.currentQuestion && m && m.script ? `<div class="host-script"><div class="host-script__h">🎤 บทเกริ่นนำ (พูดนำก่อนกด “เริ่ม”)</div><p>${m.script}</p></div>` : ''}
+      ${q ? hostQuestionView(q, s) : (total ? '' : '')}
+      ${s.phase === 'revealed' ? `<div class="host-live-chips">
+          ${s.showAnswer ? '<span class="host-live host-live--on">✓ เฉลยขึ้นทุกจอแล้ว</span>' : '<span class="host-live">เฉลยยังไม่ขึ้นจอ</span>'}
+          ${s.showResults ? '<span class="host-live host-live--on">🏆 ผลคะแนนขึ้นทุกจอแล้ว</span>' : '<span class="host-live">ผลคะแนนยังไม่ขึ้นจอ</span>'}
+        </div>` : ''}
+      ${!open ? durationPicker() : ''}`;
+      hydrateIcons(cq);
+      if (!open) cq.querySelectorAll('.host-dur__opt').forEach((b) => b.addEventListener('click', () => {
+        selectedDuration = Number(b.dataset.dur);
+        cq.querySelectorAll('.host-dur__opt').forEach((x) => x.classList.toggle('is-on', x === b));
+      }));
+    }
   }
   updateQuickbar(s);
   runTimer(s);
   maybeScore(s);
   if (s.demo) maybeDemo(s);
+}
+
+/* ---------------- duration picker (§วิทยากรกำหนดเวลาต่อข้อ) ---------------- */
+function durationPicker() {
+  return `<div class="host-dur">
+    <span class="host-dur__lbl">⏱ เวลาตอบต่อข้อ</span>
+    <div class="host-dur__opts">
+      ${DURATIONS.map((d) => `<button type="button" class="host-dur__opt ${d === selectedDuration ? 'is-on' : ''}" data-dur="${d}">${d === 0 ? 'ไม่จำกัด' : d + ' วิ'}</button>`).join('')}
+    </div>
+  </div>`;
+}
+
+/* ---------------- host question view — เห็นคำถาม+เฉลย+คำอธิบายเพื่อบรรยาย ---------------- */
+function hostQuestionView(q, s) {
+  const answered = s.phase === 'revealed';
+  let body = '';
+  if (q.type === 'scenario' || q.type === 'investigation') {
+    if (q.type === 'investigation') {
+      body += `<div class="hq-news"><div class="hq-news__tag">📰 ข่าวที่ต้องตรวจสอบ</div>
+        <div class="hq-news__hl">${esc(q.headline)}</div>
+        <div class="hq-news__meta">ที่มา: ${esc(q.source || '—')} · ${esc(q.date || '')}</div>
+        ${q.quote ? `<blockquote class="hq-news__q">${esc(q.quote)}</blockquote>` : ''}</div>`;
+      if (q.evidence && q.evidence.length) body += `<div class="hq-ev"><b>หลักฐาน/เบาะแส:</b><ul>${q.evidence.map((e) => `<li><b>${esc(e.label)}:</b> ${esc(e.text)}</li>`).join('')}</ul></div>`;
+      body += `<p class="hq-prompt">${esc(q.question)}</p>`;
+    } else {
+      body += `<p class="hq-prompt">${esc(q.q_prompt || q.situation)}</p>`;
+    }
+    body += `<div class="hq-opts">${(q.options || []).map((o) => `<div class="hq-opt ${o.key === q.correct ? 'is-correct' : ''}"><span class="hq-opt__k">${o.key}</span><span>${esc(o.text)}</span>${o.key === q.correct ? '<span class="hq-opt__mk">✓ เฉลย</span>' : ''}</div>`).join('')}</div>`;
+  } else if (q.type === 'dragsort') {
+    body += `<p class="hq-prompt">${esc(q.prompt)}</p>`;
+    body += `<div class="hq-map">${(q.cards || []).map((c) => { const b = (q.buckets || []).find((x) => x.key === c.correct); return `<div class="hq-map__row"><span>${esc(c.text)}</span><span class="hq-map__ar">→</span><b>${esc(b ? (b.labelTh || b.label) : c.correct)}</b></div>`; }).join('')}</div>`;
+  } else if (q.type === 'ordering') {
+    body += `<p class="hq-prompt">${esc(q.scenario)}</p>`;
+    body += `<ol class="hq-order">${(q.correctOrder || []).map((id) => { const st = (q.steps || []).find((x) => x.id === id); return `<li>${esc(st ? st.text : id)}</li>`; }).join('')}</ol>`;
+  } else if (q.type === 'assessment') {
+    body += `<p class="hq-prompt">${esc(q.prompt)}</p>`;
+    body += `<div class="hq-ev"><ul>${(q.statements || []).map((st) => `<li>${esc(st.text)}</li>`).join('')}</ul></div>`;
+    body += `<p class="ds-muted" style="font-size:.85rem">แบบประเมินตนเอง — ไม่มีถูก/ผิด (ทุกคนได้ XP เท่ากัน)</p>`;
+  }
+  const expl = q.explanation ? `<div class="hq-expl"><b>💡 คำอธิบาย (สำหรับบรรยายเพิ่มเติม):</b><p>${esc(q.explanation)}</p></div>` : '';
+  return `<div class="host-qview ${answered ? 'is-revealed' : ''}">${body}${expl}</div>`;
 }
 
 /* ---------------- demo bots (§40) ---------------- */
@@ -319,7 +387,7 @@ function paintDistribution(answers) {
 
 /* ---------------- actions (state machine) ---------------- */
 function startMission(mid) {
-  updateSession(state.sid, { currentMission: mid, phase: 'mission_intro', currentQuestion: null, questionIndex: 0, showExplanation: false });
+  updateSession(state.sid, { currentMission: mid, phase: 'mission_intro', currentQuestion: null, questionIndex: 0, showAnswer: false, showResults: false });
 }
 function onAction(act) {
   const s = state.session; if (!s) return;
@@ -327,7 +395,8 @@ function onAction(act) {
     const count = questionCount(state.questions, s.currentMission);
     const n = (s.questionIndex || 0) + 1;
     if (count && n > count) { alert('ครบทุกข้อของภารกิจนี้แล้ว — เลือกภารกิจถัดไปได้เลย'); return; }
-    updateSession(state.sid, { phase: 'question_open', currentQuestion: `${s.currentMission}_q${n}`, questionIndex: n, questionStartAt: Date.now(), showExplanation: false });
+    // เปิดคำถามใหม่: ใช้เวลาที่วิทยากรเลือกไว้ + รีเซ็ตสถานะเฉลย/ผลคะแนน
+    updateSession(state.sid, { phase: 'question_open', currentQuestion: `${s.currentMission}_q${n}`, questionIndex: n, questionStartAt: Date.now(), questionDuration: selectedDuration, showAnswer: false, showResults: false });
   };
   if (act === 'start') {
     if (!s.currentMission) { alert('เลือกภารกิจก่อน'); return; }
@@ -335,9 +404,11 @@ function onAction(act) {
   } else if (act === 'lock') {
     updateSession(state.sid, { phase: 'locked' });
   } else if (act === 'results') {
-    updateSession(state.sid, { phase: 'revealed', showExplanation: false });
+    // ผลคะแนน — อิสระ, กดก่อนหรือหลังเฉลยก็ได้ (toggle)
+    updateSession(state.sid, { phase: 'revealed', showResults: !s.showResults });
   } else if (act === 'explain') {
-    updateSession(state.sid, { phase: 'revealed', showExplanation: true });
+    // เฉลยคำตอบ — อิสระจากผลคะแนน (toggle)
+    updateSession(state.sid, { phase: 'revealed', showAnswer: !s.showAnswer });
   } else if (act === 'next') {
     openNext();
   }
@@ -345,17 +416,21 @@ function onAction(act) {
 
 function updateQuickbar(s) {
   const en = { start: false, lock: false, results: false, explain: false, next: false };
+  const on = { results: !!s.showResults, explain: !!s.showAnswer };
   const p = s.phase;
-  if (!s.currentMission) { /* all disabled except nothing */ }
+  if (!s.currentMission) { /* all disabled */ }
   else if (p === 'mission_intro' || p === 'lobby') en.start = true;
-  else if (p === 'question_open') { en.lock = true; }
+  else if (p === 'question_open') { en.lock = true; en.results = true; en.explain = true; }
   else if (p === 'locked') { en.results = true; en.explain = true; }
   else if (p === 'revealed') {
     const count = questionCount(state.questions, s.currentMission);
     const more = !count || (s.questionIndex || 0) < count;
-    en.explain = true; en.next = more; en.start = more;
+    en.results = true; en.explain = true; en.next = more;
   }
-  document.querySelectorAll('.quickbar [data-act]').forEach((b) => { b.disabled = !en[b.dataset.act]; });
+  document.querySelectorAll('.quickbar [data-act]').forEach((b) => {
+    b.disabled = !en[b.dataset.act];
+    b.classList.toggle('is-live', !!on[b.dataset.act]);
+  });
 }
 
 /* ---------------- timer ---------------- */
@@ -363,6 +438,7 @@ function runTimer(s) {
   if (timerIv) { clearInterval(timerIv); timerIv = null; }
   const el = () => $('#hostTimer');
   if (s.phase !== 'question_open' || !s.questionStartAt) { if (el()) el().textContent = ''; return; }
+  if (s.questionDuration === 0) { if (el()) { el().textContent = '∞'; el().classList.remove('is-low'); } return; } // ไม่จำกัดเวลา
   const start = typeof s.questionStartAt === 'number' ? s.questionStartAt : (s.questionStartAt.toMillis ? s.questionStartAt.toMillis() : Date.now());
   const dur = (s.questionDuration || 30) * 1000;
   const tick = () => {
@@ -379,10 +455,10 @@ function phaseTh(p) { return ({ lobby: 'ห้องรอ', mission_intro: 'เ
 function hostHint(s) {
   if (!s.currentMission) return 'แตะการ์ดภารกิจด้านล่างเพื่อเริ่ม';
   switch (s.phase) {
-    case 'mission_intro': return 'เกริ่นนำสั้นๆ แล้วกด “เริ่ม” เพื่อเปิดคำถาม';
-    case 'question_open': return 'รอเด็กตอบ · กด “ล็อก” เมื่อตอบครบหรือหมดเวลา';
-    case 'locked': return 'กด “ผลลัพธ์” เพื่อเฉลย + ขึ้นแท่นคะแนน';
-    case 'revealed': return 'อภิปรายเฉลย แล้วกด “ถัดไป” หรือแตะภารกิจใหม่';
+    case 'mission_intro': return 'อ่านบทเกริ่นนำ · เลือกเวลา แล้วกด “เริ่ม”';
+    case 'question_open': return 'อ่านโจทย์ให้ฟัง · กด “ล็อก” เมื่อตอบครบหรือหมดเวลา';
+    case 'locked': return 'กด “เฉลย” และ/หรือ “ผลคะแนน” ได้ตามลำดับที่ต้องการ';
+    case 'revealed': return 'อธิบายเพิ่มเติม แล้วกด “ถัดไป” หรือแตะภารกิจใหม่';
     default: return 'แตะการ์ดภารกิจเพื่อเริ่ม';
   }
 }
@@ -397,9 +473,10 @@ if (location.hostname === 'localhost') {
   window.__hostDemo = async (patch) => {
     document.querySelector('.ds-modal-backdrop')?.remove();
     state.content = await loadContent().catch(() => ({ missions: [] }));
+    state.questions = await loadQuestions().catch(() => ({}));
     state.sid = 'demo';
     buildControlSkeleton();
-    state.session = { code: 'DEMO1', phase: 'mission_intro', currentMission: 'm4', questionIndex: 0, playersJoined: 24, ...(patch || {}) };
+    state.session = { code: 'DEMO1', phase: 'mission_intro', currentMission: 'm4', questionIndex: 0, playersJoined: 24, completedMissions: ['m1', 'm2'], ...(patch || {}) };
     renderControl(state.session);
     state.players = Array.from({ length: 24 }, (_, i) => ({ playerId: 'P' + String(i + 1).padStart(3, '0'), nickname: 'Player' + (i + 1), xp: i * 40, lastSeen: { toMillis: () => Date.now() } }));
     renderStats();

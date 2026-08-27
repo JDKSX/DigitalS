@@ -8,17 +8,33 @@
 import { auth, db } from './firebase.js';
 import {
   signInAnonymously, signInWithEmailAndPassword, signOut,
-  onAuthStateChanged,
+  onAuthStateChanged, setPersistence,
+  browserLocalPersistence, browserSessionPersistence, inMemoryPersistence,
 } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
 import { doc, getDoc } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
 
-// NOTE: Firebase Web Auth already persists the session locally (IndexedDB)
-// across refreshes by default. We deliberately do NOT call setPersistence()
-// here — doing so at module load switched the store to localStorage and lost
-// the existing IndexedDB session, forcing a re-login on every refresh.
+// iOS Safari FIX: the anonymous student session must survive the index → student
+// page navigation (and refresh). Firebase Auth's DEFAULT store is IndexedDB, which
+// iOS Safari (ITP / Private mode) frequently blocks — the session is then lost on
+// the next page and Firestore reads are denied, leaving students stuck on
+// "กำลังเชื่อมต่อ" with an empty passport. localStorage is far more reliable on iOS,
+// so we pin persistence to it (with graceful fallbacks). Called on EVERY student
+// page BEFORE any sign-in / auth restore so the same store is read and written.
+// Staff pages never call this, so their IndexedDB session is unaffected.
+let _persistenceReady = null;
+export function ensureStudentPersistence() {
+  if (_persistenceReady) return _persistenceReady;
+  _persistenceReady = (async () => {
+    for (const p of [browserLocalPersistence, browserSessionPersistence, inMemoryPersistence]) {
+      try { await setPersistence(auth, p); return; } catch (_e) { /* try next */ }
+    }
+  })();
+  return _persistenceReady;
+}
 
 /** Ensure the student is signed in anonymously; returns the user. */
 export async function ensureStudentAuth() {
+  await ensureStudentPersistence();
   if (auth.currentUser) return auth.currentUser;
   const cred = await signInAnonymously(auth);
   return cred.user;

@@ -26,6 +26,24 @@ export function renderGame(ctx) {
   if (!q) { container.innerHTML = notReady(); return; }
   ctx.q = q; ctx.sub = getSubmitted()[q.id];
   window.__ctxQ = q; // used by the delegated evidence-reveal handler
+
+  // เฉลย (showAnswer) และ ผลคะแนน (showResults) เป็นอิสระต่อกัน วิทยากรกดสลับได้
+  const origPhase = session.phase;
+  if (origPhase === 'revealed' && !ctx.showAnswer) {
+    // ยังไม่เฉลย แต่ (อาจ) โชว์ผลคะแนน → ให้ตัวคำถามแสดงเป็น "ล็อกแล้ว" (เห็นคำตอบตัวเอง ไม่เห็นเฉลย)
+    ctx.session = { ...session, phase: 'locked' };
+  }
+  dispatchType(ctx);
+  ctx.session = session; // คืนค่าเดิม
+  if (origPhase === 'revealed' && ctx.showResults) {
+    const wrap = document.createElement('div');
+    wrap.innerHTML = standingsHtml(ctx);
+    if (wrap.firstElementChild) container.appendChild(wrap.firstElementChild);
+  }
+}
+
+function dispatchType(ctx) {
+  const q = ctx.q;
   switch (q.type) {
     case 'investigation': return renderChoice(ctx, investigationHeader(q));
     case 'dragsort': return renderDragsort(ctx);
@@ -34,6 +52,28 @@ export function renderGame(ctx) {
     case 'scenario':
     default: return renderChoice(ctx, `<p class="q-situation">${q.q_prompt || q.situation}</p>`);
   }
+}
+
+/* ---------------- standings (ผลคะแนนบนจอนักเรียน) ---------------- */
+function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+function fmtXp(n) { return (n || 0).toLocaleString('en-US'); }
+function standingsHtml(ctx) {
+  const lb = ctx.leaderboard || [];
+  const me = ctx.player || {};
+  const top = lb.slice(0, 5);
+  const inTop = top.some((p) => p.playerId === me.playerId);
+  return `<div class="stand ds-fade-up">
+    <div class="stand__h">🏆 อันดับคะแนน <span class="ds-en">Live Standings</span></div>
+    ${top.length ? top.map((p, i) => `<div class="stand__row ${p.playerId === me.playerId ? 'is-me' : ''}">
+        <span class="stand__rk ${i < 3 ? 'is-top' : ''}">${i + 1}</span>
+        <span class="stand__nm">${esc(p.nickname) || '—'} <span class="ds-pid">${esc(p.playerId)}</span></span>
+        <span class="stand__xp">${fmtXp(p.xp)}</span></div>`).join('')
+      : '<p class="ds-muted ds-center" style="padding:10px 0">กำลังรวมคะแนน…</p>'}
+    ${(!inTop && me.playerId) ? `<div class="stand__row is-me stand__me">
+        <span class="stand__rk">•</span>
+        <span class="stand__nm">คุณ <span class="ds-pid">${esc(me.playerId)}</span></span>
+        <span class="stand__xp">${fmtXp(me.xp)}</span></div>` : ''}
+  </div>`;
 }
 
 /* =====================================================================
@@ -288,6 +328,8 @@ function softLock(container, isSubmitted) {
   container.querySelectorAll('.ds-option, .card-chip, .assess__opt, .bucket__drop').forEach((x) => (x.style.pointerEvents = 'none'));
 }
 function startTimer(session, onZero) {
+  const el0 = document.getElementById('qTimer');
+  if (session.questionDuration === 0) { if (el0) el0.textContent = '∞'; return; } // ไม่จำกัดเวลา — ไม่ล็อกอัตโนมัติ
   const start = numTime(session.questionStartAt);
   const dur = (session.questionDuration || 30) * 1000;
   let fired = false;

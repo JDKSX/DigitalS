@@ -9,12 +9,9 @@
 
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
 import { getAuth } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
-import {
-  getFirestore, initializeFirestore, persistentLocalCache, persistentSingleTabManager
-} from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
+import { getFirestore } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
 
-// TODO(): replace with the real project config from
-// Firebase Console → Project settings → Your apps → Web app.
+// Web app config (public identifiers — safe to commit).
 export const firebaseConfig = {
   apiKey: 'AIzaSyBZfvVTRb4g8KRmxDNWNDO_U5Swi4oUbGk',
   authDomain: 'digital-survival-f335f.firebaseapp.com',
@@ -27,17 +24,11 @@ export const firebaseConfig = {
 export const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 
-// Offline persistence (IndexedDB) — supports graceful network failure (§28).
-// Single-tab manager keeps writes queued locally and re-syncs on reconnect.
-let db;
-try {
-  db = initializeFirestore(app, {
-    localCache: persistentLocalCache({ tabManager: persistentSingleTabManager() }),
-  });
-} catch (_e) {
-  db = getFirestore(app); // fallback if persistence unavailable
-}
-export { db };
+// Firestore with the default in-memory cache. We deliberately do NOT enable
+// IndexedDB persistence: on some iOS Safari devices it can hang Firestore
+// operations (students got stuck on "connecting"). Login/resume still works
+// because that relies on Firebase AUTH persistence, which is separate.
+export const db = getFirestore(app);
 
 // Shared constants
 export const COLL = {

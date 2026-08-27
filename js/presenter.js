@@ -7,13 +7,14 @@
    ================================================================= */
 import { findSessionByCode, listenSession, listenLeaderboard } from './session.js';
 import { ensureStudentAuth } from './auth.js';
-import { loadContent } from './content.js';
+import { loadContent, loadQuestions } from './content.js';
 import { audio } from './audio.js';
 
 const $ = (s) => document.querySelector(s);
 const stage = () => $('#stage');
 const MOODMAP = { lobby: 'lobby', mission_intro: 'lobby', question_open: 'question', locked: 'locked', revealed: 'reveal', paused: 'locked' };
 let content = { missions: [] };
+let questions = {};
 let timerIv = null, lastKey = null, lb = [], lastSession = null, prevRanks = {}, lastConfettiQ = null, lastAllInQ = null, lastTickLeft = null, lastStartQ = null;
 
 async function main() {
@@ -22,24 +23,27 @@ async function main() {
 
   try { await ensureStudentAuth(); } catch (_e) {}
   content = await loadContent().catch(() => ({ missions: [] }));
+  loadQuestions().then((q) => { questions = q || {}; if (lastSession) { lastKey = null; render(lastSession); } }).catch(() => {});
+
+  // Localhost-only preview helpers (no Firestore) — registered early so they
+  // work even without a real session doc.
+  if (location.hostname === 'localhost') {
+    window.__pres = (patch) => { lastKey = null; render({ status: 'open', code, playersJoined: 24, ...patch }); };
+    window.__presLb = (arr) => { lb = arr; };
+  }
 
   let session;
   try { session = await findSessionByCode(code); } catch (_e) {}
   if (!session) return fatal('ไม่พบเซสชัน', `รหัส ${code.toUpperCase()} ไม่ถูกต้อง หรือห้องปิดแล้ว`);
 
   listenSession(session.id, (s) => { if (s) { lastSession = s; render(s); } }, () => {});
-  listenLeaderboard(session.id, (arr) => { lb = arr; if (lastSession && lastSession.phase === 'revealed') { lastKey = null; render(lastSession); } });
+  listenLeaderboard(session.id, (arr) => { lb = arr; if (lastSession && lastSession.phase === 'revealed' && lastSession.showResults) { lastKey = null; render(lastSession); } });
 
   wireSound();
-
-  if (location.hostname === 'localhost') {
-    window.__pres = (patch) => { lastKey = null; render({ status: 'open', code: session.code, playersJoined: 24, ...patch }); };
-    window.__presLb = (arr) => { lb = arr; };
-  }
 }
 
 function render(s) {
-  const key = `${s.status}:${s.phase}:${s.currentMission || ''}:${s.currentQuestion || ''}:${s.showExplanation ? 1 : 0}`;
+  const key = `${s.status}:${s.phase}:${s.currentMission || ''}:${s.currentQuestion || ''}:${s.showAnswer ? 1 : 0}:${s.showResults ? 1 : 0}`;
   const dynamic = s.phase === 'question_open'; // timer + live count keep updating
   if (key === lastKey && !dynamic) return;
   lastKey = key;
@@ -114,14 +118,46 @@ function locked(s, m) {
 function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
 
 function revealed(s, m) {
-  stage().innerHTML = `
-    <p class="ds-en presenter__eyebrow" style="color:var(--success)">${s.showExplanation ? 'Explanation' : 'Results'}</p>
-    <h1 class="presenter__title" style="font-size:clamp(1.5rem,4.5vw,2.6rem)">🏆 อันดับคะแนน${m ? ' · ' + m.titleTh : ''}</h1>
-    ${podiumBlock()}`;
-  animatePodium();
-  if (lb.length && s.currentQuestion !== lastConfettiQ) { lastConfettiQ = s.currentQuestion; confetti(); audio.sfx('reveal'); }
-  const next = {}; lb.forEach((p, i) => { next[p.playerId] = i + 1; });
-  prevRanks = next; // remember ordering so the NEXT reveal shows up/down movement
+  const wantAns = !!s.showAnswer;
+  const wantRes = !!s.showResults;
+  const q = questions[s.currentQuestion];
+  const eyebrow = wantAns && wantRes ? 'Answer + Results' : wantAns ? 'Answer' : 'Results';
+  let html = `<p class="ds-en presenter__eyebrow" style="color:var(--success)">${eyebrow}${m ? ' · ' + esc(m.title) : ''}</p>`;
+  if (wantAns) html += answerCard(q);
+  if (wantRes) {
+    html += `<h1 class="presenter__title" style="font-size:clamp(1.4rem,4vw,2.4rem);margin-top:${wantAns ? '10px' : '0'}">🏆 อันดับคะแนน</h1>${podiumBlock()}`;
+  }
+  if (!wantAns && !wantRes) html += `<h1 class="presenter__title">เฉลยแล้ว</h1><p class="presenter__sub">ดูคำตอบบน iPad ของคุณ</p>`;
+  stage().innerHTML = html;
+  if (wantRes) {
+    animatePodium();
+    if (lb.length && s.currentQuestion !== lastConfettiQ) { lastConfettiQ = s.currentQuestion; confetti(); audio.sfx('reveal'); }
+    const next = {}; lb.forEach((p, i) => { next[p.playerId] = i + 1; });
+    prevRanks = next; // จำอันดับไว้ให้รอบถัดไปโชว์ลูกศรขึ้น/ลง
+  } else if (wantAns && s.currentQuestion !== lastConfettiQ) {
+    lastConfettiQ = s.currentQuestion; audio.sfx('reveal');
+  }
+}
+
+/** การ์ดเฉลยบนจอฉาย — เฉลย + คำอธิบาย (ตัวหนังสือใหญ่ อ่านง่าย). */
+function answerCard(q) {
+  if (!q) return '<p class="presenter__sub">ดูเฉลยบน iPad ของนักเรียน</p>';
+  let ans = '';
+  if (q.type === 'scenario' || q.type === 'investigation') {
+    const opt = (q.options || []).find((o) => o.key === q.correct);
+    ans = `<b class="ds-pid">${esc(q.correct)}</b> ${esc(opt ? opt.text : '')}`;
+  } else if (q.type === 'ordering') {
+    ans = (q.correctOrder || []).map((id) => { const st = (q.steps || []).find((x) => x.id === id); return esc(st ? st.text : id); }).join(' → ');
+  } else if (q.type === 'dragsort') {
+    ans = 'ดูการจับคู่ที่ถูกต้องบนแผงวิทยากร';
+  } else if (q.type === 'assessment') {
+    ans = 'แบบประเมินตนเอง — ไม่มีถูก/ผิด';
+  }
+  return `<div class="pres-answer">
+    <div class="pres-answer__lbl">เฉลย</div>
+    <div class="pres-answer__ans">${ans}</div>
+    ${q.explanation ? `<div class="pres-answer__ex">${esc(q.explanation)}</div>` : ''}
+  </div>`;
 }
 function move(pid, curRank) {
   const prev = prevRanks[pid];
