@@ -1,7 +1,7 @@
 /* =================================================================
    Join flow (index.html) — DIGITAL SURVIVAL
    Opens a dialog: session code → nickname → (room) → create player →
-   redirect to student.html. Minimal in Phase 3; polished in Phase 4.
+   redirect to student.html. Supports QR deep-links (index.html?code=XXXXX).
    ================================================================= */
 import { joinSession, getStoredPlayer } from './session.js';
 

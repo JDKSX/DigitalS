@@ -1,6 +1,6 @@
 /* =================================================================
    Host controller (host.html) — DIGITAL SURVIVAL
-   Phase 5: full live control of the session state machine —
+   full live control of the session state machine —
    pick a mission, START / LOCK / RESULTS / EXPLAIN / NEXT, with live
    player, answered and answer-distribution stats.
    ================================================================= */

@@ -13,7 +13,7 @@ import {
   getFirestore, initializeFirestore, persistentLocalCache, persistentSingleTabManager
 } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
 
-// TODO(Phase 3): replace with the real project config from
+// TODO(): replace with the real project config from
 // Firebase Console → Project settings → Your apps → Web app.
 export const firebaseConfig = {
   apiKey: 'AIzaSyBZfvVTRb4g8KRmxDNWNDO_U5Swi4oUbGk',

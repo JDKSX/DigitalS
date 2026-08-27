@@ -4,7 +4,7 @@
     "tagline_th": "8 ภารกิจเอาตัวรอดในโลกดิจิทัล",
     "tagline_en": "8 Missions to Survive the Digital World",
     "version": "0.2.0",
-    "note": "Thai-first: *Th fields are primary display, English fields are secondary/brand tags. Questions live in questions.json (Phase 7)."
+    "note": "Thai-first: *Th fields are primary display, English fields are secondary/brand tags. Questions live in questions.json."
   },
   "levels": [
     { "level": 1, "nameTh": "มือใหม่ดิจิทัล",   "name": "Digital Rookie",    "minXp": 0 },

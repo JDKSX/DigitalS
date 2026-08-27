@@ -1,8 +1,8 @@
 /* =================================================================
    Student page controller (student.html) — DIGITAL SURVIVAL
-   Phase 4: full Digital Passport (identity + XP + level + progress +
-   badge collection) and a phase-reactive stage that mirrors the host's
-   session state machine. Actual question rendering lands in Phase 6.
+   Full Digital Passport (identity + XP + level + progress + badges)
+   and a phase-reactive stage that mirrors the host's session state
+   machine, delegating question rendering to the game engine.
    ================================================================= */
 import { getStoredPlayer, listenPlayer, listenSession, touchPresence, clearStoredPlayer } from './session.js';
 import { loadContent, loadQuestions, levelForXp } from './content.js';

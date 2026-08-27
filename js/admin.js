@@ -7,7 +7,7 @@ import { onAuth, signInStaff, getRole, authErrorTh } from './auth.js';
 import { getSessions, getSessionUsers, getSessionAnswers, setSessionStatus, archiveSession } from './session.js';
 import { loadContent, loadQuestions } from './content.js';
 import { computeAnalytics } from './analytics.js';
-import { exportCSV, exportXLSX } from './export.js';
+import { exportCSV, exportXLSX, download } from './export.js';
 import { icon, hydrateIcons } from './icons.js';
 
 const $ = (s) => document.querySelector(s);
@@ -146,10 +146,62 @@ function renderContent() {
     <div class="content-list">${ms.map((m) => { const n = countQ(m.id); return `<div class="content-row">
       <span class="ds-feat" style="width:40px;height:40px">${icon(m.icon || 'shield')}</span>
       <div><div style="font-family:var(--font-display);font-weight:700">${m.titleTh}</div><div class="ds-muted" style="font-size:.8rem">${m.title} · ${m.topicTh}</div></div>
-      <span class="ds-chip">${n} ข้อ · ${m.type}</span></div>`; }).join('')}</div></div>`;
+      <span class="ds-chip">${n} ข้อ · ${m.type}</span></div>`; }).join('')}</div></div>
+    <div class="ds-card" style="margin-top:16px">
+      <div class="ds-heading"><span class="ds-en">Editor · แก้ไข/เพิ่ม/ลบ</span><h2>แก้ไขเนื้อหา</h2></div>
+      <div class="ed-tabs">
+        <button class="ed-tab is-active" data-file="questions" type="button">questions.json · คำถาม</button>
+        <button class="ed-tab" data-file="missions" type="button">missions.json · ภารกิจ</button>
+      </div>
+      <textarea id="edArea" class="ed-area" spellcheck="false" placeholder="กำลังโหลด…"></textarea>
+      <div id="edMsg" class="ed-msg"></div>
+      <div class="ds-row" style="gap:10px;margin-top:12px;flex-wrap:wrap">
+        <button class="ds-btn ds-btn--ghost" id="edValidate" type="button">${icon('search')} ตรวจสอบ JSON</button>
+        <button class="ds-btn ds-btn--primary" id="edDownload" type="button">${icon('reveal')} ดาวน์โหลดไฟล์</button>
+      </div>
+      <p class="ds-muted" style="font-size:.85rem;margin-top:10px">แก้ไข → <b>ตรวจสอบ</b> → <b>ดาวน์โหลด</b> → อัปโหลดทับในโฟลเดอร์ <span class="ds-mono">data/</span> บน GitHub → เว็บอัปเดตอัตโนมัติ · เพิ่มคำถาม = ก๊อปทั้งบล็อกแล้วเปลี่ยน id เป็น <span class="ds-mono">m1_q4</span></p>
+    </div>`;
   hydrateIcons(box);
+  initEditor();
 }
 function countQ(mid) { let n = 0; while (state.questions[`${mid}_q${n + 1}`]) n++; return n; }
+
+/* ---------------- content editor (edit / add / remove, download JSON) ---------------- */
+const edRaw = { questions: null, missions: null };
+let edCurrent = 'questions';
+async function initEditor() {
+  const area = $('#edArea'), msg = $('#edMsg');
+  const load = async (file) => {
+    if (edRaw[file] == null) {
+      try { edRaw[file] = await (await fetch(`data/${file}.json?ts=${Date.now()}`)).text(); }
+      catch (_e) { edRaw[file] = JSON.stringify(file === 'questions' ? { questions: state.questions } : state.content, null, 2); }
+    }
+    area.value = edRaw[file]; msg.textContent = ''; msg.className = 'ed-msg';
+  };
+  await load(edCurrent);
+  document.querySelectorAll('.ed-tab').forEach((t) => t.addEventListener('click', async () => {
+    document.querySelectorAll('.ed-tab').forEach((x) => x.classList.remove('is-active'));
+    t.classList.add('is-active'); edCurrent = t.dataset.file; await load(edCurrent);
+  }));
+  area.addEventListener('input', () => { edRaw[edCurrent] = area.value; }); // keep edits across tab switches
+  $('#edValidate').addEventListener('click', () => validateJson(false));
+  $('#edDownload').addEventListener('click', () => { if (validateJson(true)) download(`${edCurrent}.json`, area.value, 'application/json'); });
+}
+function validateJson(silentOk) {
+  const area = $('#edArea'), msg = $('#edMsg');
+  try {
+    const obj = JSON.parse(area.value);
+    let info = 'JSON ถูกต้อง ✓';
+    if (edCurrent === 'questions' && obj.questions) info += ` · ${Object.keys(obj.questions).length} คำถาม`;
+    if (edCurrent === 'missions' && obj.missions) info += ` · ${obj.missions.length} ภารกิจ`;
+    msg.textContent = info; msg.className = 'ed-msg is-ok';
+    return true;
+  } catch (e) {
+    msg.textContent = 'JSON ผิดพลาด: ' + e.message; msg.className = 'ed-msg is-err';
+    if (!silentOk) area.focus();
+    return false;
+  }
+}
 
 /* ---------------- shared ---------------- */
 function activeBanner() { return `<div class="active-banner">เซสชัน: <b>${state.active.code}</b> · ${state.users.length} คน <button class="ds-chip" onclick="document.querySelector('.admin-tab[data-tab=&quot;sessions&quot;]').click()">เปลี่ยน</button></div>`; }

@@ -52,6 +52,18 @@
 .sess-actions { margin-left: auto; display: flex; gap: 8px; flex-wrap: wrap; }
 .sess-btn { min-height: 40px; padding: 0 16px; font-size: .85rem; }
 
+/* content editor */
+.ed-tabs { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+.ed-tab { min-height: 40px; padding: 0 16px; border-radius: var(--r-pill); background: var(--bg-700); border: 1px solid var(--line); color: var(--text-muted); font-family: var(--font-mono); font-size: .82rem; cursor: pointer; }
+.ed-tab.is-active { color: var(--text); border-color: var(--cyan); box-shadow: inset 0 0 0 1px var(--cyan); }
+.ed-area { width: 100%; min-height: 320px; resize: vertical; padding: 14px; border-radius: var(--r-md);
+  background: var(--bg-800); border: 1.5px solid var(--line-strong); color: var(--text);
+  font-family: var(--font-mono); font-size: .82rem; line-height: 1.6; tab-size: 2; white-space: pre; overflow-wrap: normal; overflow-x: auto; }
+.ed-area:focus-visible { outline: none; border-color: var(--electric); box-shadow: var(--glow-electric); }
+.ed-msg { margin-top: 10px; font-family: var(--font-mono); font-size: .82rem; min-height: 20px; }
+.ed-msg.is-ok { color: var(--success); }
+.ed-msg.is-err { color: var(--danger); }
+
 /* content overview */
 .content-list { display: flex; flex-direction: column; gap: 10px; }
 .content-row { display: flex; align-items: center; gap: 12px; padding: 10px; border-radius: var(--r-md); background: var(--bg-700); border: 1px solid var(--line); }
