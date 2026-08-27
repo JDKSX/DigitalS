@@ -56,7 +56,7 @@ async function main() {
 }
 
 function render(s) {
-  const key = `${s.status}:${s.phase}:${s.currentMission || ''}:${s.currentQuestion || ''}:${s.showAnswer ? 1 : 0}:${s.showResults ? 1 : 0}:${s.finalAnnounce ? 1 : 0}`;
+  const key = `${s.status}:${s.phase}:${s.currentMission || ''}:${s.currentQuestion || ''}:${s.showAnswer ? 1 : 0}:${s.showResults ? 1 : 0}:${s.finalAnnounce ? 1 : 0}:${s.announceStep != null ? s.announceStep : ''}`;
   const dynamic = s.phase === 'question_open'; // timer + live count keep updating
   if (key === lastKey && !dynamic) return;
   lastKey = key;
