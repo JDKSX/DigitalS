@@ -105,7 +105,7 @@
 @media (prefers-reduced-motion: reduce) { .cube-scene .cube { animation: none; transform: rotateX(-24deg) rotateY(-32deg); } }
 
 /* Answer card on the projector — เฉลย + คำอธิบาย (ใหญ่ อ่านง่าย) */
-.pres-answer { margin: 8px auto 0; max-width: 30ch; padding: clamp(18px,3vw,30px); border-radius: 22px;
+.pres-answer { margin: 8px auto 0; width: min(92vw, 62ch); max-width: 100%; padding: clamp(20px,3vw,34px) clamp(24px,4vw,44px); border-radius: 22px;
   background: color-mix(in srgb, var(--success, #34D399) 12%, transparent);
   border: 2px solid color-mix(in srgb, var(--success, #34D399) 45%, transparent); }
 .pres-answer__lbl { font-family: var(--font-display); font-weight: 700; letter-spacing: .05em; color: var(--success, #34D399); font-size: clamp(.9rem,2vw,1.2rem); }
