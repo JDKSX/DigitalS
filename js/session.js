@@ -116,6 +116,7 @@ export async function joinSession(code, nickname, room = '') {
   try {
     localStorage.setItem(PLAYER_KEY, JSON.stringify(stored));
     localStorage.setItem('ds-idle-student', String(Date.now())); // fresh idle clock per join
+    localStorage.removeItem('ds-answers'); // fresh start — never inherit a previous player's answers
   } catch (_e) {}
   return { ...stored, nickname, room };
 }

@@ -340,6 +340,7 @@ function wireSound() {
 
 /* ---------------- timer ---------------- */
 function startTimer(s) {
+  if (s.questionDuration === 0) { const el = $('#presTimer'); if (el) { el.textContent = '∞'; el.classList.remove('is-low'); } return; } // ไม่จำกัดเวลา
   const start = typeof s.questionStartAt === 'number' ? s.questionStartAt
     : (s.questionStartAt && s.questionStartAt.toMillis ? s.questionStartAt.toMillis() : Date.now());
   const dur = (s.questionDuration || 30) * 1000;

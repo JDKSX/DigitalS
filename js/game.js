@@ -12,8 +12,11 @@ const SUBMIT_KEY = 'ds-answers';
 let timerIv = null;
 
 function getSubmitted() { try { return JSON.parse(localStorage.getItem(SUBMIT_KEY) || '{}'); } catch (_e) { return {}; } }
-function markSubmitted(qid, choice, isCorrect) {
-  const m = getSubmitted(); m[qid] = { choice, isCorrect };
+/** Key answers by sessionId+questionId so a device reused across sessions (or a
+    previous student's iPad) never inherits an old answer as "already submitted". */
+function subKey(ctx, qid) { return `${(ctx.stored && ctx.stored.sessionId) || ''}_${qid}`; }
+function markSubmitted(key, choice, isCorrect) {
+  const m = getSubmitted(); m[key] = { choice, isCorrect };
   try { localStorage.setItem(SUBMIT_KEY, JSON.stringify(m)); } catch (_e) {}
 }
 function numTime(t) { return typeof t === 'number' ? t : (t && t.toMillis ? t.toMillis() : Date.now()); }
@@ -24,7 +27,7 @@ export function renderGame(ctx) {
   if (timerIv) { clearInterval(timerIv); timerIv = null; }
   const q = questions[session.currentQuestion];
   if (!q) { container.innerHTML = notReady(); return; }
-  ctx.q = q; ctx.sub = getSubmitted()[q.id];
+  ctx.q = q; ctx.sub = getSubmitted()[subKey(ctx, q.id)];
   window.__ctxQ = q; // used by the delegated evidence-reveal handler
 
   // เฉลย (showAnswer) และ ผลคะแนน (showResults) เป็นอิสระต่อกัน วิทยากรกดสลับได้
@@ -100,7 +103,7 @@ function renderChoice(ctx, headerHtml) {
   const submit = container.querySelector('#qSubmit');
   opts.forEach((b) => b.addEventListener('click', () => { choice = b.dataset.key; opts.forEach((x) => x.classList.toggle('is-selected', x === b)); submit.disabled = false; }));
   submit.addEventListener('click', () => doSubmit(ctx, submit, () => ({ choice, isCorrect: choice === q.correct }), () => submittedBox(container, `คำตอบของคุณ: <b class="ds-pid">${choice}</b>`)));
-  startTimer(session, () => softLock(container, () => getSubmitted()[q.id]));
+  startTimer(session, () => softLock(container, () => getSubmitted()[subKey(ctx, q.id)]));
 }
 
 function lockedChoice(ctx, headerHtml) {
@@ -177,7 +180,7 @@ function renderDragsort(ctx) {
     const isCorrect = q.cards.every((c) => assign[c.id] === c.correct);
     doSubmit(ctx, submit, () => ({ choice: assign, isCorrect }), () => submittedBox(container, 'ส่งคำตอบเรียงการ์ดแล้ว'));
   });
-  startTimer(session, () => softLock(container, () => getSubmitted()[q.id]));
+  startTimer(session, () => softLock(container, () => getSubmitted()[subKey(ctx, q.id)]));
 }
 function cardChip(c) { return `<button class="card-chip" data-card="${c.id}">${c.text}</button>`; }
 function dragReview(ctx, reveal) {
@@ -227,7 +230,7 @@ function renderOrdering(ctx) {
     const isCorrect = order.length === q.correctOrder.length && order.every((id, i) => id === q.correctOrder[i]);
     doSubmit(ctx, submit, () => ({ choice: order, isCorrect }), () => submittedBox(container, 'ส่งลำดับการตัดสินใจแล้ว'));
   });
-  startTimer(session, () => softLock(container, () => getSubmitted()[q.id]));
+  startTimer(session, () => softLock(container, () => getSubmitted()[subKey(ctx, q.id)]));
 }
 function orderReview(ctx, reveal) {
   const { container, q, sub } = ctx;
@@ -301,7 +304,7 @@ async function doSubmit(ctx, submit, build, onDone) {
   try {
     await submitAnswer(ctx.stored, { questionId: q.id, missionId: q.missionId, choice, isCorrect, responseMs });
   } catch (_e) { /* offline → queued by persistence */ }
-  markSubmitted(q.id, choice, isCorrect);
+  markSubmitted(subKey(ctx, q.id), choice, isCorrect);
   onDone();
 }
 function submittedBox(container, line) {
