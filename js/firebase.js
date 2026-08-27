@@ -36,5 +36,6 @@ export const COLL = {
   users: 'users',
   answers: 'answers',
   leaderboards: 'leaderboards', // leaderboards/{sessionId}
+  stats: 'stats',               // stats/{sessionId} — volatile counts (presenter-only, off the students' fan-out)
   settings: 'settings',
 };

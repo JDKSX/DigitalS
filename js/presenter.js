@@ -5,7 +5,7 @@
    are denormalised there by the host), so it works even when the
    projector machine is only signed in anonymously.
    ================================================================= */
-import { findSessionByCode, listenSession, listenLeaderboard } from './session.js';
+import { findSessionByCode, listenSession, listenLeaderboard, listenStats } from './session.js';
 import { ensureStudentAuth } from './auth.js';
 import { loadContent, loadQuestions } from './content.js';
 import { audio } from './audio.js';
@@ -15,6 +15,7 @@ const stage = () => $('#stage');
 const MOODMAP = { lobby: 'lobby', mission_intro: 'lobby', question_open: 'question', locked: 'locked', revealed: 'reveal', paused: 'locked' };
 let content = { missions: [] };
 let questions = {};
+let stats = {}; // volatile counts from stats/{sessionId} (answeredCount / playersJoined / playersOnline)
 let timerIv = null, lastKey = null, lb = [], lastSession = null, prevRanks = {}, lastConfettiQ = null, lastAllInQ = null, lastTickLeft = null, lastStartQ = null;
 
 async function main() {
@@ -37,19 +38,31 @@ async function main() {
   if (!session) return fatal('ไม่พบเซสชัน', `รหัส ${code.toUpperCase()} ไม่ถูกต้อง หรือห้องปิดแล้ว`);
 
   listenSession(session.id, (s) => { if (s) { lastSession = s; render(s); } }, () => {});
-  listenLeaderboard(session.id, (arr) => { lb = arr; if (lastSession && lastSession.phase === 'revealed' && lastSession.showResults) { lastKey = null; render(lastSession); } });
+  listenLeaderboard(session.id, (arr) => {
+    lb = arr;
+    if (!lastSession) return;
+    const showingScores = (lastSession.phase === 'revealed' && lastSession.showResults) || (lastSession.status === 'closed' && lastSession.finalAnnounce);
+    if (showingScores) { lastKey = null; render(lastSession); }
+  });
+
+  // Live counts (kept off the students' session-doc fan-out). Re-render the
+  // phases that display a count when it changes.
+  listenStats(session.id, (st) => {
+    stats = st || {};
+    if (lastSession && ['lobby', 'question_open', 'locked'].includes(lastSession.phase)) { lastKey = null; render(lastSession); }
+  });
 
   wireSound();
 }
 
 function render(s) {
-  const key = `${s.status}:${s.phase}:${s.currentMission || ''}:${s.currentQuestion || ''}:${s.showAnswer ? 1 : 0}:${s.showResults ? 1 : 0}`;
+  const key = `${s.status}:${s.phase}:${s.currentMission || ''}:${s.currentQuestion || ''}:${s.showAnswer ? 1 : 0}:${s.showResults ? 1 : 0}:${s.finalAnnounce ? 1 : 0}`;
   const dynamic = s.phase === 'question_open'; // timer + live count keep updating
   if (key === lastKey && !dynamic) return;
   lastKey = key;
   if (timerIv) { clearInterval(timerIv); timerIv = null; }
 
-  if (s.status === 'closed') { audio.setMood('reveal'); return closed(); }
+  if (s.status === 'closed') { audio.setMood('reveal'); return closed(s); }
   const m = (content.missions || []).find((x) => x.id === s.currentMission);
   audio.setMood(MOODMAP[s.phase] || 'lobby');
 
@@ -64,6 +77,10 @@ function render(s) {
   }
 }
 
+/* volatile counts come from the stats doc (fallback to session for old data) */
+function joinedCount(s) { return (stats.playersJoined != null) ? stats.playersJoined : (s.playersJoined || 0); }
+function answeredCountOf(s) { return (stats.answeredCount != null) ? stats.answeredCount : (s.answeredCount || 0); }
+
 /* ---------------- states ---------------- */
 function lobby(s) {
   const joinUrl = new URL('index.html?code=' + encodeURIComponent(s.code), location.href).href;
@@ -76,7 +93,7 @@ function lobby(s) {
       <div class="pres-qr"><img src="${qr}" alt="QR เข้าเล่น" width="230" height="230"
         onerror="this.style.display='none'"><span class="pres-qr__cap">📷 สแกนเพื่อเข้าเล่น</span></div>
       <div class="pres-join__code"><span class="ds-en">รหัสห้อง · session code</span><div class="pres-code">${s.code}</div>
-        <div class="presenter__count"><span class="ds-stat__num" style="font-size:2.2rem">${s.playersJoined || 0}</span>
+        <div class="presenter__count"><span class="ds-stat__num" style="font-size:2.2rem">${joinedCount(s)}</span>
           <span class="ds-muted">ผู้เล่นพร้อมแล้ว</span></div></div>
     </div>`;
 }
@@ -90,8 +107,8 @@ function missionIntro(s, m) {
 }
 
 function question(s, m) {
-  const total = s.playersJoined || 0;
-  const ans = s.answeredCount || 0;
+  const total = joinedCount(s);
+  const ans = answeredCountOf(s);
   const allIn = total > 0 && ans >= total;
   stage().innerHTML = `
     <p class="ds-en presenter__eyebrow" style="color:var(--cyan)">${m ? m.title : ''} · ข้อ ${s.questionIndex || 1}</p>
@@ -107,11 +124,11 @@ function question(s, m) {
 }
 
 function locked(s, m) {
-  const total = s.playersJoined || 0;
+  const total = joinedCount(s);
   stage().innerHTML = `
     <p class="ds-en presenter__eyebrow" style="color:var(--warning)">Answers Locked</p>
     <h1 class="presenter__title" style="font-size:clamp(2rem,7vw,4.2rem)">ปิดรับคำตอบแล้ว</h1>
-    <div class="pres-answered">${s.answeredCount || 0} / ${total} <span class="ds-muted">ตอบแล้ว</span></div>
+    <div class="pres-answered">${answeredCountOf(s)} / ${total} <span class="ds-muted">ตอบแล้ว</span></div>
     <p class="ds-muted" style="margin-top:8px">เตรียมเฉลย…</p>`;
 }
 
@@ -214,9 +231,77 @@ function simple(title, en, sub) {
   stage().innerHTML = `<p class="ds-en presenter__eyebrow">${en}</p>
     <h1 class="presenter__title">${title}</h1><p class="presenter__sub">${sub}</p>`;
 }
-function closed() {
+function closed(s) {
+  if (s && s.finalAnnounce) return finalRanking(s);
   stage().innerHTML = `<h1 class="presenter__title"><span class="ds-ai-text">DIGITAL SURVIVOR</span></h1>
-    <p class="presenter__sub">จบกิจกรรมแล้ว — ขอบคุณทุกคน 🎉</p>`;
+    <p class="presenter__sub">จบกิจกรรมแล้ว — ขอบคุณทุกคน 🎉</p>
+    <p class="ds-muted" style="margin-top:10px">เตรียมประกาศผลรวม…</p>`;
+}
+
+/** Grand finale — announced by the host via "ประกาศผลรวม". Supports a
+    suspense reveal: the host reveals positions one at a time from the bottom up
+    (announceStep = how many revealed). When all are revealed it shows the full
+    celebratory podium. announceStep null/undefined = show everything at once. */
+let lastStep = null;
+function finalRanking(s) {
+  const ranked = lb || [];
+  const N = ranked.length;
+  const step = (s && typeof s.announceStep === 'number') ? Math.min(s.announceStep, N) : N;
+  const stepChanged = step !== lastStep; lastStep = step;
+
+  if (!N) { stage().innerHTML = `<p class="ds-en presenter__eyebrow" style="color:var(--xp)">Final Results</p>
+    <h1 class="presenter__title" style="font-size:clamp(1.8rem,5vw,3rem)">🏆 ประกาศผลรวม</h1>
+    <p class="presenter__sub">ยังไม่มีคะแนน</p>`; return; }
+
+  if (step >= N) return finalPodium(ranked, stepChanged); // all revealed → celebratory podium
+
+  // Progressive suspense reveal: bottom `step` ranks are shown, filling upward.
+  const firstRevealed = N - step; // indices >= firstRevealed are revealed
+  const nextRank = firstRevealed; // 0-based index of the next one to reveal (its rank = firstRevealed)
+  const rows = ranked.map((p, i) => {
+    const rank = i + 1;
+    if (i >= firstRevealed) {
+      const isNew = i === firstRevealed;
+      return `<div class="pod-row ${rank <= 3 ? 'pod-row--top' : ''} ${isNew ? 'pod-row--new' : ''}">
+        <span class="pod-rank ${rank <= 3 ? 'is-top' : ''}">${rank}</span>
+        <span class="pod-name">${esc(p.nickname) || '—'} <span class="ds-mono" style="opacity:.55">${esc(p.playerId)}</span></span>
+        <span class="pod-xp" data-xp="${p.xp || 0}">0</span></div>`;
+    }
+    return `<div class="pod-row pod-row--hidden"><span class="pod-rank">${rank}</span>
+      <span class="pod-name ds-muted">อันดับที่ ${rank} · รอประกาศ…</span><span class="pod-xp">•••</span></div>`;
+  }).join('');
+  stage().innerHTML = `
+    <p class="ds-en presenter__eyebrow" style="color:var(--xp)">Final Results · ประกาศทีละอันดับ</p>
+    <h1 class="presenter__title" style="font-size:clamp(1.6rem,4.5vw,2.6rem)">🏆 ลุ้นอันดับคะแนน</h1>
+    <p class="presenter__sub" style="font-size:clamp(1rem,2.5vw,1.4rem)">เผยแล้ว ${step} / ${N} อันดับ${step ? '' : ' · เตรียมลุ้น!'}</p>
+    <div class="pod-rest" style="max-width:720px;margin:18px auto 0">${rows}</div>`;
+  animatePodium();
+  if (stepChanged && step > 0) audio.sfx('reveal');
+}
+
+function finalPodium(ranked, celebrate) {
+  const [p1, p2, p3] = ranked.slice(0, 3);
+  const rest = ranked.slice(3);
+  const ped = (p, rank) => p ? `<div class="ped ped--${rank}">
+      <div class="ped__player">
+        ${rank === 1 ? '<div class="ped__crown">👑</div>' : ''}
+        <div class="ped__name">${esc(p.nickname) || '—'}</div>
+        <div class="ped__pid ds-mono">${esc(p.playerId)}</div>
+        <div class="ped__xp" data-xp="${p.xp || 0}">0</div>
+      </div>
+      <div class="ped__bar"><span class="ped__rank">${rank}</span></div>
+    </div>` : '';
+  stage().innerHTML = `
+    <p class="ds-en presenter__eyebrow" style="color:var(--xp)">Final Results · ประกาศผลรวม</p>
+    <h1 class="presenter__title" style="font-size:clamp(1.8rem,5vw,3rem)">🏆 อันดับคะแนนสุดท้าย</h1>
+    <div class="podium">${ped(p2, 2)}${ped(p1, 1)}${ped(p3, 3)}</div>
+    ${rest.length ? `<div class="pod-rest">${rest.map((p, i) => `<div class="pod-row">
+      <span class="pod-rank">${i + 4}</span>
+      <span class="pod-name">${esc(p.nickname) || '—'} <span class="ds-mono" style="opacity:.55">${esc(p.playerId)}</span></span>
+      <span class="pod-xp" data-xp="${p.xp || 0}">0</span></div>`).join('')}</div>` : ''}
+    <p class="ds-muted" style="margin-top:22px">ขอบคุณทุกคนที่ร่วมกิจกรรม 🎉 · <span class="ds-ai-text">DIGITAL SURVIVOR</span></p>`;
+  animatePodium();
+  if (celebrate !== false) { confetti(); audio.sfx('reveal'); }
 }
 function fatal(title, sub) {
   stage().innerHTML = `<h1 class="presenter__title" style="font-size:clamp(2rem,6vw,3.4rem)">${title}</h1>

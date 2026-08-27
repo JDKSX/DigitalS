@@ -51,6 +51,8 @@
 .sess-code { font-family: var(--font-mono); font-weight: 700; font-size: 1.2rem; letter-spacing: .1em; color: var(--cyan); }
 .sess-actions { margin-left: auto; display: flex; gap: 8px; flex-wrap: wrap; }
 .sess-btn { min-height: 40px; padding: 0 16px; font-size: .85rem; }
+.sess-btn--danger { color: var(--danger, #FB6B6B); border-color: color-mix(in srgb, var(--danger, #FB6B6B) 40%, transparent); }
+.sess-btn--danger:hover { background: color-mix(in srgb, var(--danger, #FB6B6B) 12%, transparent); }
 
 /* content editor */
 .ed-tabs { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }

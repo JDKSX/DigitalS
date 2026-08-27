@@ -1,7 +1,9 @@
 /* Presenter / projector screen — DIGITAL SURVIVAL */
-.presenter { position: relative; min-height: 100dvh; overflow: hidden; display: grid; place-items: center; }
+/* scrollable + vertically centered: margin:auto centers short content but lets
+   tall content (answer card + podium) scroll to both ends without clipping. */
+.presenter { position: relative; height: 100dvh; overflow-x: hidden; overflow-y: auto; display: flex; flex-direction: column; }
 .presenter__stage {
-  position: relative; text-align: center;
+  position: relative; text-align: center; margin: auto;
   padding: clamp(24px, 6vw, 64px); max-width: 1100px; width: 100%;
 }
 .presenter__eyebrow { color: var(--cyan); font-size: clamp(.8rem, 2vw, 1rem); margin-bottom: 20px; }
@@ -112,3 +114,11 @@
 .pres-answer__ans { font-family: var(--font-display); font-weight: 800; line-height: 1.25; margin-top: 6px; font-size: clamp(1.4rem,3.4vw,2.4rem); }
 .pres-answer__ans .ds-pid { color: var(--success, #34D399); }
 .pres-answer__ex { margin-top: 14px; font-size: clamp(1rem,1.8vw,1.35rem); line-height: 1.55; color: var(--text-muted); }
+
+/* Progressive final reveal rows (ประกาศทีละอันดับ) */
+.pod-row--hidden { opacity: .4; }
+.pod-row--top { background: color-mix(in srgb, var(--xp, #FFC24B) 14%, transparent); border-color: color-mix(in srgb, var(--xp, #FFC24B) 40%, transparent); }
+.pod-rank.is-top { background: linear-gradient(180deg, var(--xp, #FFC24B), var(--xp-dim, #E0A83B)); color: #2a1a02; }
+.pod-row--new { animation: revealPop .5s cubic-bezier(.22,1,.36,1) both; box-shadow: 0 0 0 2px color-mix(in srgb, var(--xp, #FFC24B) 55%, transparent); }
+@keyframes revealPop { 0% { transform: scale(.9); opacity: 0; } 60% { transform: scale(1.03); } 100% { transform: scale(1); opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .pod-row--new { animation: none; } }

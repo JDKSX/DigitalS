@@ -66,11 +66,18 @@ service cloud.firestore {
         && request.resource.data.keys().hasOnly([
              'sessionId','playerId','questionId','missionId',
              'choice','isCorrect','responseMs','authUid','submittedAt']);
-      allow update, delete: if false; // immutable
+      allow update: if false;            // immutable (never editable)
+      allow delete: if isAdmin();        // admin may delete a whole session's data (cleanup)
     }
 
     // ---- leaderboards: read by anyone signed in; written by staff only ----
     match /leaderboards/{sessionId} {
+      allow read: if signedIn();
+      allow write: if isStaff();
+    }
+
+    // ---- stats: volatile counts for the presenter; written by staff only ----
+    match /stats/{sessionId} {
       allow read: if signedIn();
       allow write: if isStaff();
     }

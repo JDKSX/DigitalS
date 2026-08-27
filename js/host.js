@@ -4,8 +4,9 @@
    pick a mission, START / LOCK / RESULTS / EXPLAIN / NEXT, with live
    player, answered and answer-distribution stats.
    ================================================================= */
-import { onAuth, signInStaff, getRole, authErrorTh } from './auth.js';
-import { createSession, listenSession, listenPlayers, listenQuestionAnswers, updateSession,
+import { onAuth, signInStaff, getRole, authErrorTh, signOutUser } from './auth.js';
+import { startIdleTimer } from './idle.js';
+import { createSession, listenSession, listenPlayers, listenQuestionAnswers, updateSession, updateStats,
   getQuestionAnswersOnce, getMissionPlayers, applyScores, markScored, markMissionComplete, writeLeaderboard,
   createDemoPlayers, submitAnswer } from './session.js';
 import { loadContent, loadQuestions, questionCount } from './content.js';
@@ -22,6 +23,17 @@ let lastLbKey = '';
 // เวลาตอบต่อข้อ (วิทยากรเลือกได้ก่อนกด “เริ่ม”). 0 = ไม่จำกัดเวลา.
 const DURATIONS = [20, 30, 45, 60, 90, 0];
 let selectedDuration = 45;
+
+/* ---------------- staff idle auto-logout (1 ชม.) ---------------- */
+let idleStarted = false;
+function startStaffIdle() {
+  if (idleStarted) return; idleStarted = true;
+  startIdleTimer({ key: 'ds-idle-staff', minutes: 60, onIdle: async () => {
+    try { await signOutUser(); } catch (_e) {}
+    try { localStorage.removeItem('ds-idle-staff'); } catch (_e) {}
+    location.reload();
+  } });
+}
 
 /* ---------------- staff login ---------------- */
 function showLogin() {
@@ -58,6 +70,7 @@ onAuth(async (user) => {
   const role = await getRole(user.uid);
   if (!role) return showLogin();
   document.querySelector('.ds-modal-backdrop')?.remove(); // clear any stale login modal
+  startStaffIdle(); // auto sign-out after 1h idle
   state.uid = user.uid;
   state.content = await loadContent().catch(() => ({ missions: [] }));
   state.questions = await loadQuestions().catch(() => ({}));
@@ -119,6 +132,7 @@ function buildControlSkeleton() {
         <div class="host-code" id="hostCodeBig">—</div></div>
       <div class="ds-row" style="gap:8px">
         <a class="ds-chip" id="presenterLink" href="presenter.html" target="_blank" rel="noopener">${icon('chart')} เปิดจอฉาย ↗</a>
+        <button class="ds-chip ds-chip--gold" id="announceBtn" type="button">${icon('trophy')} ประกาศผลรวม</button>
         <button class="ds-chip" id="endSession" type="button">${icon('trophy')} จบกิจกรรม</button>
         <button class="ds-chip" id="newSession" type="button">${icon('sparkles')} เซสชันใหม่</button>
       </div>
@@ -138,14 +152,20 @@ function buildControlSkeleton() {
   const es = panel.querySelector('#endSession');
   if (es) es.addEventListener('click', () => {
     if (confirm('จบกิจกรรม? ผู้เรียนจะเห็นหน้าสรุปผล (Digital Survivor) และห้องจะปิด')) {
-      updateSession(state.sid, { status: 'closed' }).catch((e) => alert('ปิดไม่สำเร็จ: ' + (e.message || e)));
+      updateSession(state.sid, { status: 'closed', finalAnnounce: false }).catch((e) => alert('ปิดไม่สำเร็จ: ' + (e.message || e)));
+    }
+  });
+  const an = panel.querySelector('#announceBtn');
+  if (an) an.addEventListener('click', () => {
+    if (confirm('เริ่มประกาศผลรวม? ห้องจะปิด (ผู้เรียนเห็นหน้าสรุปผล) แล้วคุณเผยอันดับทีละขั้นบนจอฉายได้')) {
+      updateSession(state.sid, { status: 'closed', finalAnnounce: true, announceStep: 0 }).catch((e) => alert('ประกาศไม่สำเร็จ: ' + (e.message || e)));
     }
   });
   const ns = panel.querySelector('#newSession');
   if (ns) ns.addEventListener('click', () => {
     if (confirm('สร้างเซสชันใหม่? (เซสชันปัจจุบันจะยังอยู่ในระบบ ดูย้อนหลังได้ที่ Admin)')) {
       try { localStorage.removeItem(HOST_KEY); } catch (_e) {}
-      scoredLocal.clear(); demoAnsweredQ.clear(); lastLbKey = '';
+      scoredLocal.clear(); demoAnsweredQ.clear(); lastLbKey = ''; lastStats = {};
       if (unsubSession) unsubSession(); if (unsubPlayers) unsubPlayers(); if (unsubAnswers) unsubAnswers();
       state.sid = null; state.session = null;
       renderCreate();
@@ -171,7 +191,11 @@ function renderControl(s) {
   const m = (state.content.missions || []).find((x) => x.id === s.currentMission);
   const cq = $('#currentQ');
   if (cq) {
-    if (!s.currentMission) cq.innerHTML = `<p class="ds-muted ds-center" style="padding:16px 0">แตะภารกิจด้านบนเพื่อเริ่ม</p>`;
+    if (s.status === 'closed') {
+      if (s.finalAnnounce) renderAnnounceControls(s);
+      else cq.innerHTML = `<p class="ds-muted ds-center" style="padding:16px 0">จบกิจกรรมแล้ว — กด “🏆 ประกาศผลรวม” เพื่อประกาศอันดับ หรือ “เซสชันใหม่”</p>`;
+    }
+    else if (!s.currentMission) cq.innerHTML = `<p class="ds-muted ds-center" style="padding:16px 0">แตะภารกิจด้านบนเพื่อเริ่ม</p>`;
     else {
       const total = questionCount(state.questions, s.currentMission);
       const q = s.currentQuestion ? state.questions[s.currentQuestion] : null;
@@ -202,6 +226,30 @@ function renderControl(s) {
   runTimer(s);
   maybeScore(s);
   if (s.demo) maybeDemo(s);
+}
+
+/* ---------------- final announcement controls (เผยทีละอันดับ) ---------------- */
+function renderAnnounceControls(s) {
+  const cq = $('#currentQ'); if (!cq) return;
+  const N = Math.min(state.players.length, 20);
+  const step = Math.max(0, Math.min(typeof s.announceStep === 'number' ? s.announceStep : N, N));
+  const nextRank = N - step;
+  if (!N) { cq.innerHTML = `<div class="host-announce"><div class="host-announce__h">${icon('trophy')} ประกาศผลรวม</div><p class="ds-muted">ยังไม่มีผู้เล่นในเซสชันนี้</p></div>`; hydrateIcons(cq); return; }
+  cq.innerHTML = `<div class="host-announce">
+    <div class="host-announce__h">${icon('trophy')} ประกาศผลรวม — เผยทีละอันดับ</div>
+    <p class="ds-muted" style="font-size:.9rem">เผยจากอันดับท้าย ไล่ขึ้นหาที่ 1 (ลุ้นบนจอฉาย) · เผยครบแล้วจะขึ้นแท่น 1-2-3 + คอนเฟตติ</p>
+    <div class="host-announce__meta">เผยแล้ว <b>${step}</b> / ${N} อันดับ${step < N ? ` · ถัดไป: <b>อันดับที่ ${nextRank}</b>` : ' · ครบแล้ว 🎉'}</div>
+    <div class="host-announce__btns">
+      <button class="ds-btn ds-btn--primary" id="revNext" type="button" ${step >= N ? 'disabled' : ''}>เผยอันดับถัดไป ▶</button>
+      <button class="ds-btn ds-btn--ghost" id="revAll" type="button" ${step >= N ? 'disabled' : ''}>เผยทั้งหมด</button>
+      <button class="ds-btn ds-btn--ghost" id="revReset" type="button" ${step <= 0 ? 'disabled' : ''}>เริ่มใหม่</button>
+    </div>
+  </div>`;
+  hydrateIcons(cq);
+  const set = (v) => updateSession(state.sid, { announceStep: v }).catch(() => {});
+  cq.querySelector('#revNext')?.addEventListener('click', () => set(Math.min(N, step + 1)));
+  cq.querySelector('#revAll')?.addEventListener('click', () => set(N));
+  cq.querySelector('#revReset')?.addEventListener('click', () => set(0));
 }
 
 /* ---------------- duration picker (§วิทยากรกำหนดเวลาต่อข้อ) ---------------- */
@@ -317,21 +365,24 @@ async function maybeScore(s) {
 }
 
 function renderStats() {
-  const online = state.players.filter((p) => p.lastSeen && p.lastSeen.toMillis && (Date.now() - p.lastSeen.toMillis() < 90000)).length;
+  const online = state.players.filter((p) => p.lastSeen && p.lastSeen.toMillis && (Date.now() - p.lastSeen.toMillis() < 240000)).length;
   setStat(0, online);
   setStat(1, state.players.length);
   const xps = state.players.map((p) => p.xp || 0);
   setStat(3, xps.length ? Math.round(xps.reduce((a, b) => a + b, 0) / xps.length) : 0);
-  // Denormalize counts onto the session doc so the (anonymous) presenter can read them.
-  maybePush({ playersOnline: online, playersJoined: state.players.length });
+  // Denormalize counts to the SEPARATE stats doc (presenter-only) — keeps these
+  // frequent writes off the session doc that all students listen to.
+  pushStats({ playersOnline: online, playersJoined: state.players.length });
   renderLeaderboard();
 }
 
 /* ---------------- leaderboard ---------------- */
 function renderLeaderboard() {
-  const top = [...state.players]
+  const ranked = [...state.players]
     .map((p) => ({ playerId: p.playerId || '—', nickname: p.nickname || '—', xp: p.xp || 0 }))
-    .sort((a, b) => b.xp - a.xp).slice(0, 10);
+    .sort((a, b) => b.xp - a.xp);
+  const top = ranked.slice(0, 10);        // host side panel
+  const board = ranked.slice(0, 20);      // presenter / students / final announcement
   const el = document.getElementById('lbList');
   if (el) {
     el.innerHTML = top.length ? top.map((p, i) => `<div class="lb-row">
@@ -341,16 +392,25 @@ function renderLeaderboard() {
       : '<p class="ds-muted ds-center" style="padding:14px 0">ยังไม่มีคะแนน</p>';
   }
   // Persist top-N (no private data) for presenter/students — only when changed.
-  const key = top.map((p) => `${p.playerId}:${p.xp}`).join('|');
-  if (key !== lastLbKey && state.sid && state.sid !== 'demo') { lastLbKey = key; writeLeaderboard(state.sid, top).catch(() => {}); }
+  const key = board.map((p) => `${p.playerId}:${p.xp}`).join('|');
+  if (key !== lastLbKey && state.sid && state.sid !== 'demo') { lastLbKey = key; writeLeaderboard(state.sid, board).catch(() => {}); }
 }
 
-/** Throttle answeredCount denormalization to at most ~1 write / 1.5s. */
+/** Throttle answeredCount denormalization to at most ~1 write / 3s. */
 let answeredTimer = null, answeredPending = null;
 function pushAnsweredThrottled(count) {
   answeredPending = count;
   if (answeredTimer) return;
-  answeredTimer = setTimeout(() => { answeredTimer = null; maybePush({ answeredCount: answeredPending }); }, 1500);
+  answeredTimer = setTimeout(() => { answeredTimer = null; pushStats({ answeredCount: answeredPending }); }, 3000);
+}
+
+/** Write volatile counts to the stats doc, only when a value actually changed. */
+let lastStats = {};
+function pushStats(patch) {
+  if (!state.sid || state.sid === 'demo') return;
+  const diff = {};
+  Object.keys(patch).forEach((k) => { if (lastStats[k] !== patch[k]) diff[k] = patch[k]; });
+  if (Object.keys(diff).length) { Object.assign(lastStats, diff); updateStats(state.sid, diff).catch(() => {}); }
 }
 
 /** Write to the session only when a value actually changed (saves writes §26). */
@@ -366,6 +426,7 @@ function watchAnswers(s) {
   if (qid === answersQid) return;
   answersQid = qid;
   if (unsubAnswers) { unsubAnswers(); unsubAnswers = null; }
+  pushStats({ answeredCount: 0 }); // reset immediately on question change (no stale count)
   if (!qid) { setStat(2, 0); paintDistribution([]); return; }
   unsubAnswers = listenQuestionAnswers(state.sid, qid, (answers) => {
     setStat(2, answers.length);
@@ -418,7 +479,8 @@ function updateQuickbar(s) {
   const en = { start: false, lock: false, results: false, explain: false, next: false };
   const on = { results: !!s.showResults, explain: !!s.showAnswer };
   const p = s.phase;
-  if (!s.currentMission) { /* all disabled */ }
+  if (s.status === 'closed') { /* all disabled — use ประกาศผล controls */ }
+  else if (!s.currentMission) { /* all disabled */ }
   else if (p === 'mission_intro' || p === 'lobby') en.start = true;
   else if (p === 'question_open') { en.lock = true; en.results = true; en.explain = true; }
   else if (p === 'locked') { en.results = true; en.explain = true; }

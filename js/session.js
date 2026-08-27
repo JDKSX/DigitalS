@@ -7,7 +7,7 @@ import { db, COLL } from './firebase.js';
 import { ensureStudentAuth } from './auth.js';
 import { auth } from './firebase.js';
 import {
-  collection, doc, getDoc, getDocs, setDoc, updateDoc, serverTimestamp,
+  collection, doc, getDoc, getDocs, setDoc, updateDoc, deleteDoc, serverTimestamp,
   query, where, limit, orderBy, onSnapshot, deleteField,
   writeBatch, increment, arrayUnion,
 } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
@@ -113,7 +113,10 @@ export async function joinSession(code, nickname, room = '') {
   if (!playerId) throw new Error('เข้าร่วมไม่สำเร็จ กรุณาลองใหม่อีกครั้ง');
 
   const stored = { sessionId: session.id, playerId, docId: `${session.id}_${playerId}`, code };
-  try { localStorage.setItem(PLAYER_KEY, JSON.stringify(stored)); } catch (_e) {}
+  try {
+    localStorage.setItem(PLAYER_KEY, JSON.stringify(stored));
+    localStorage.setItem('ds-idle-student', String(Date.now())); // fresh idle clock per join
+  } catch (_e) {}
   return { ...stored, nickname, room };
 }
 
@@ -171,6 +174,17 @@ export function listenPlayers(sessionId, cb, onErr) {
 /** HOST: patch the session state machine (phase, currentMission, …). */
 export function updateSession(sessionId, patch) {
   return updateDoc(doc(db, COLL.sessions, sessionId), { ...patch, updatedAt: serverTimestamp() });
+}
+
+/** HOST: volatile counts (answeredCount / playersJoined / playersOnline) written
+    to a SEPARATE doc so the 120-200 students listening to the session doc are NOT
+    charged a read on every count tick. Only the presenter listens to this. */
+export function updateStats(sessionId, patch) {
+  return setDoc(doc(db, COLL.stats, sessionId), { ...patch, updatedAt: serverTimestamp() }, { merge: true });
+}
+export function listenStats(sessionId, cb, onErr) {
+  return onSnapshot(doc(db, COLL.stats, sessionId),
+    (snap) => cb(snap.exists() ? snap.data() : {}), onErr || (() => {}));
 }
 
 /** HOST: live answers for one question (staff-only read). */
@@ -279,6 +293,24 @@ export function setSessionStatus(sessionId, status) {
 }
 export function archiveSession(sessionId, archived = true) {
   return updateDoc(doc(db, COLL.sessions, sessionId), { archived, status: archived ? 'closed' : 'open', updatedAt: serverTimestamp() });
+}
+
+/** ADMIN: permanently delete a session and all its data (players, answers,
+    leaderboard). Batched (≤450/commit). Requires admin rights (rules). */
+export async function deleteSessionFully(sessionId) {
+  const delWhere = async (coll) => {
+    const snap = await getDocs(query(collection(db, coll), where('sessionId', '==', sessionId)));
+    for (let i = 0; i < snap.docs.length; i += 450) {
+      const batch = writeBatch(db);
+      snap.docs.slice(i, i + 450).forEach((d) => batch.delete(d.ref));
+      await batch.commit();
+    }
+  };
+  await delWhere(COLL.users);
+  await delWhere(COLL.answers);
+  try { await deleteDoc(doc(db, COLL.leaderboards, sessionId)); } catch (_e) {}
+  try { await deleteDoc(doc(db, COLL.stats, sessionId)); } catch (_e) {}
+  await deleteDoc(doc(db, COLL.sessions, sessionId));
 }
 
 export { deleteField };

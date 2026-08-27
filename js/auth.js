@@ -22,7 +22,7 @@ import { doc, getDoc } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase
 // page BEFORE any sign-in / auth restore so the same store is read and written.
 // Staff pages never call this, so their IndexedDB session is unaffected.
 let _persistenceReady = null;
-export function ensureStudentPersistence() {
+export function ensureLocalPersistence() {
   if (_persistenceReady) return _persistenceReady;
   _persistenceReady = (async () => {
     for (const p of [browserLocalPersistence, browserSessionPersistence, inMemoryPersistence]) {
@@ -31,10 +31,12 @@ export function ensureStudentPersistence() {
   })();
   return _persistenceReady;
 }
+// Backwards-compatible alias used by the student page.
+export const ensureStudentPersistence = ensureLocalPersistence;
 
 /** Ensure the student is signed in anonymously; returns the user. */
 export async function ensureStudentAuth() {
-  await ensureStudentPersistence();
+  await ensureLocalPersistence();
   if (auth.currentUser) return auth.currentUser;
   const cred = await signInAnonymously(auth);
   return cred.user;
@@ -42,12 +44,16 @@ export async function ensureStudentAuth() {
 
 /** Staff (host/admin) login with email + password. */
 export async function signInStaff(email, password) {
+  // Persist the staff session in localStorage so a Hard Refresh does not force
+  // a re-login (default IndexedDB can be cleared/blocked on some browsers).
+  await ensureLocalPersistence();
   const cred = await signInWithEmailAndPassword(auth, email.trim(), password);
   const role = await getRole(cred.user.uid);
   if (!role) {
     await signOut(auth);
     throw new Error('บัญชีนี้ยังไม่ได้รับสิทธิ์ (ไม่พบข้อมูลใน staff)');
   }
+  try { localStorage.setItem('ds-idle-staff', String(Date.now())); } catch (_e) {} // fresh idle clock on login
   return { user: cred.user, role };
 }
 

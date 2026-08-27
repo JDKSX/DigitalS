@@ -10,6 +10,7 @@ import { onAuth, ensureStudentPersistence, ensureStudentAuth } from './auth.js';
 import { auth } from './firebase.js';
 import { icon, hydrateIcons } from './icons.js';
 import { renderGame } from './game.js';
+import { startIdleTimer } from './idle.js';
 
 const $ = (s) => document.querySelector(s);
 const fmt = (n) => (n || 0).toLocaleString('en-US');
@@ -78,7 +79,7 @@ async function main() {
   // the tab becomes visible again. Longer interval keeps writes well under the
   // Spark budget with 120 players (§26/§36).
   touchPresence(stored.docId);
-  setInterval(() => { if (document.visibilityState === 'visible') touchPresence(stored.docId); }, 120000);
+  setInterval(() => { if (document.visibilityState === 'visible') touchPresence(stored.docId); }, 180000);
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') touchPresence(stored.docId); });
 
   // Offline / online banner (§28)
@@ -90,6 +91,10 @@ async function main() {
   document.querySelectorAll('a[href="index.html"]').forEach((a) => {
     if (a.textContent.includes('ออกจากภารกิจ')) a.addEventListener('click', () => clearStoredPlayer());
   });
+
+  // Auto-leave the session after 1 hour with no interaction (then a fresh
+  // student can use the same iPad). A manual leave button is always available.
+  startIdleTimer({ key: 'ds-idle-student', minutes: 60, onIdle: () => leaveSession() });
 
   // Dev-only helper to preview stage states without a host (localhost)
   if (location.hostname === 'localhost') {
@@ -169,6 +174,13 @@ function gameCtx(stage, s) {
     showAnswer: !!s.showAnswer, showResults: !!s.showResults, leaderboard: state.leaderboard };
 }
 
+/* ---------------- leave the session (manual or auto) ---------------- */
+function leaveSession() {
+  clearStoredPlayer();
+  try { localStorage.removeItem('ds-idle-student'); } catch (_e) {}
+  try { location.replace('index.html'); } catch (_e) { location.href = 'index.html'; }
+}
+
 /* ---------------- Final result — Digital Survivor (§43) ---------------- */
 function renderFinalResult(stage) {
   const p = state.player || {};
@@ -182,6 +194,7 @@ function renderFinalResult(stage) {
   const survivor = done >= total;
   stage.innerHTML = `
     <div class="final ds-fade-up">
+      <div class="final__notice">${icon('sparkles')} <span>วิทยากรปิดเซสชันแล้ว — นี่คือสรุปผลของคุณ ดูคะแนนได้ตามสบาย</span></div>
       <div class="final__coin">${icon('trophy')}</div>
       <p class="ds-en" style="color:var(--xp)">${survivor ? 'Digital Survivor' : 'Mission Complete'}</p>
       <h2 class="final__title">${survivor ? 'คุณรอดชีวิตในโลกดิจิทัล!' : 'จบกิจกรรมแล้ว 🎉'}</h2>
@@ -194,8 +207,16 @@ function renderFinalResult(stage) {
       </div>
       <div class="final__badges">${badges.map((b) => `<span class="final__badge ${owned.has(b.id) ? 'is-earned' : ''}" title="${b.nameTh}">${owned.has(b.id) ? icon(b.icon || 'shield') : '·'}</span>`).join('')}</div>
       <blockquote class="final__quote">"การเป็น Digital Citizen ไม่ใช่การรู้ทุกอย่าง<br>แต่คือการรู้ว่าเมื่อไรควร <b>หยุด · คิด · ตรวจสอบ · รับผิดชอบ</b>"</blockquote>
-      <a class="ds-btn ds-btn--ghost" href="index.html" style="margin-top:8px">กลับหน้าแรก</a>
+      <div class="final__actions">
+        <button class="ds-btn ds-btn--primary" id="leaveBtn" type="button">ออกจากห้อง</button>
+        <button class="ds-btn ds-btn--ghost" id="stayBtn" type="button">อยู่ดูคะแนนต่อ</button>
+      </div>
+      <p class="ds-muted ds-center" style="font-size:.82rem;margin-top:4px">ถ้าไม่ออกเอง ระบบจะพาออกจากห้องอัตโนมัติเมื่อไม่มีการใช้งาน 1 ชั่วโมง</p>
     </div>`;
+  const lb = stage.querySelector('#leaveBtn'); if (lb) lb.addEventListener('click', () => leaveSession());
+  const sb = stage.querySelector('#stayBtn'); if (sb) sb.addEventListener('click', () => {
+    const n = stage.querySelector('.final__notice'); if (n) n.remove();
+  });
   finish(stage);
 }
 

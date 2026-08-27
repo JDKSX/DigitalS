@@ -128,3 +128,12 @@
 .stand__xp { font-family: var(--font-mono); font-weight: 700; font-variant-numeric: tabular-nums; color: var(--xp, #FFC24B); }
 .stand__row.is-me { background: color-mix(in srgb, var(--electric, #2E7DFF) 12%, transparent); border-radius: 8px; }
 .stand__me { margin-top: 4px; border-top: 1px dashed var(--line); border-bottom: 0; }
+
+/* Session-closed notice + actions on the final result screen */
+.final__notice { display: flex; align-items: center; gap: 10px; justify-content: center; text-align: left;
+  margin: 0 auto 18px; padding: 10px 16px; border-radius: var(--r-pill, 999px); max-width: 46ch;
+  background: color-mix(in srgb, var(--cyan) 12%, transparent); border: 1px solid color-mix(in srgb, var(--cyan) 34%, transparent);
+  color: var(--text); font-size: .9rem; }
+.final__notice .ds-ico { width: 18px; height: 18px; flex: none; color: var(--cyan); }
+.final__actions { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-top: 18px; }
+.final__actions .ds-btn { min-width: 150px; }

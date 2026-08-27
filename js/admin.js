@@ -3,8 +3,9 @@
    Sessions list · analytics · CSV/XLSX export · close/archive.
    Read-only content overview (content is edited in data/*.json).
    ================================================================= */
-import { onAuth, signInStaff, getRole, authErrorTh } from './auth.js';
-import { getSessions, getSessionUsers, getSessionAnswers, setSessionStatus, archiveSession, saveSettings } from './session.js';
+import { onAuth, signInStaff, getRole, authErrorTh, signOutUser } from './auth.js';
+import { startIdleTimer } from './idle.js';
+import { getSessions, getSessionUsers, getSessionAnswers, setSessionStatus, archiveSession, deleteSessionFully, saveSettings } from './session.js';
 import { loadContent, loadQuestions } from './content.js';
 import { computeAnalytics } from './analytics.js';
 import { exportCSV, exportXLSX, download } from './export.js';
@@ -14,6 +15,16 @@ const $ = (s) => document.querySelector(s);
 const state = { content: null, questions: {}, sessions: [], active: null, users: [], answers: [], analytics: null };
 
 /* ---------------- login ---------------- */
+let idleStarted = false;
+function startStaffIdle() {
+  if (idleStarted) return; idleStarted = true;
+  startIdleTimer({ key: 'ds-idle-staff', minutes: 60, onIdle: async () => {
+    try { await signOutUser(); } catch (_e) {}
+    try { localStorage.removeItem('ds-idle-staff'); } catch (_e) {}
+    location.reload();
+  } });
+}
+
 function showLogin() {
   if ($('.ds-modal-backdrop')) return;
   const back = document.createElement('div');
@@ -41,6 +52,7 @@ onAuth(async (user) => {
   if (!user) return showLogin();
   if (!(await getRole(user.uid))) return showLogin();
   document.querySelector('.ds-modal-backdrop')?.remove(); // clear any stale login modal
+  startStaffIdle(); // auto sign-out after 1h idle
   state.content = await loadContent().catch(() => ({ missions: [] }));
   state.questions = await loadQuestions().catch(() => ({}));
   renderContent();
@@ -60,6 +72,17 @@ async function refreshSessions() {
   box.querySelectorAll('[data-pick]').forEach((b) => b.addEventListener('click', () => selectSession(b.dataset.pick)));
   box.querySelectorAll('[data-close]').forEach((b) => b.addEventListener('click', async () => { await setSessionStatus(b.dataset.close, 'closed').catch(() => {}); refreshSessions(); }));
   box.querySelectorAll('[data-arch]').forEach((b) => b.addEventListener('click', async () => { if (confirm('เก็บถาวรเซสชันนี้?')) { await archiveSession(b.dataset.arch).catch(() => {}); refreshSessions(); } }));
+  box.querySelectorAll('[data-del]').forEach((b) => b.addEventListener('click', async () => {
+    const s = state.sessions.find((x) => x.id === b.dataset.del);
+    if (s && s.status === 'open') { alert('ปิดเซสชันก่อนจึงจะลบได้ (กันลบห้องที่กำลังใช้งาน)'); return; }
+    if (!confirm(`ลบเซสชัน ${s ? s.code : ''} ถาวร?\nจะลบข้อมูลผู้เล่น คำตอบ และคะแนนทั้งหมดของเซสชันนี้ กู้คืนไม่ได้`)) return;
+    b.disabled = true; b.textContent = 'กำลังลบ…';
+    try {
+      await deleteSessionFully(b.dataset.del);
+      if (state.active && state.active.id === b.dataset.del) { state.active = null; state.users = []; state.answers = []; }
+      refreshSessions();
+    } catch (e) { alert('ลบไม่สำเร็จ: ' + (e.message || e) + '\n(ผู้ดูแลต้องอัปเดต Firestore Rules ให้ลบ answers ได้)'); b.disabled = false; b.textContent = 'ลบ'; }
+  }));
 }
 function sessRow(s) {
   const date = s.createdAt && s.createdAt.toDate ? s.createdAt.toDate().toLocaleString('th-TH', { dateStyle: 'medium', timeStyle: 'short' }) : '—';
@@ -71,6 +94,7 @@ function sessRow(s) {
       <button class="ds-btn ds-btn--ghost sess-btn" data-pick="${s.id}">เลือก</button>
       ${s.status === 'open' ? `<button class="ds-btn ds-btn--ghost sess-btn" data-close="${s.id}">ปิด</button>` : ''}
       <button class="ds-btn ds-btn--ghost sess-btn" data-arch="${s.id}">เก็บถาวร</button>
+      <button class="ds-btn ds-btn--ghost sess-btn sess-btn--danger" data-del="${s.id}">ลบ</button>
     </div></div>`;
 }
 
