@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>วิทยากร · DIGITAL SURVIVAL</title>
+  <meta name="theme-color" content="#070E1C">
+  <script>try{document.documentElement.setAttribute('data-theme',localStorage.getItem('ds-theme')||'dark')}catch(e){document.documentElement.setAttribute('data-theme','dark')}</script>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/host.css">
+</head>
+<body>
+<div class="app-shell">
+  <header class="app-header">
+    <a class="brand" href="index.html">
+      <span class="brand__logo"><span data-icon="shield"></span></span>
+      <span class="brand__txt"><b>DIGITAL SURVIVAL</b><small>แผงควบคุมวิทยากร · Host</small></span>
+    </a>
+    <div class="app-header__right">
+      <a class="role-chip" href="guide.html" target="_blank" rel="noopener" title="คู่มือวิทยากร">📖 คู่มือ</a>
+      <span class="role-chip"><span data-icon="chat"></span> รหัสห้อง <b style="color:var(--text)">——————</b></span>
+      <button class="ds-iconbtn" data-role="theme-toggle" type="button" aria-label="สลับธีมสว่าง/มืด" title="สลับธีม">
+        <span class="icon-sun" data-icon="sun"></span><span class="icon-moon" data-icon="moon"></span>
+      </button>
+    </div>
+  </header>
+
+  <main class="app-main host-grid">
+    <!-- Left: live status -->
+    <section class="host-col">
+      <div class="ds-heading"><span class="ds-en">Session status</span><h2>สถานะเซสชัน</h2></div>
+      <div class="stat-grid">
+        <div class="ds-card ds-card--flat stat"><span data-icon="users" class="ds-ico"></span><div class="ds-stat__num">0</div><div class="ds-stat__label">ออนไลน์ · online</div></div>
+        <div class="ds-card ds-card--flat stat"><span data-icon="id" class="ds-ico"></span><div class="ds-stat__num">0</div><div class="ds-stat__label">เข้าร่วม · joined</div></div>
+        <div class="ds-card ds-card--flat stat"><span data-icon="reveal" class="ds-ico"></span><div class="ds-stat__num">0</div><div class="ds-stat__label">ตอบแล้ว · answered</div></div>
+        <div class="ds-card ds-card--flat stat"><span data-icon="sparkles" class="ds-ico"></span><div class="ds-stat__num">0</div><div class="ds-stat__label">XP เฉลี่ย</div></div>
+      </div>
+
+      <div class="ds-heading" style="margin-top:26px"><span class="ds-en">Answer distribution</span><h2>การกระจายคำตอบ</h2></div>
+      <div class="ds-card">
+        <div class="dist"><span class="dist__k">A</span><div class="dist__bar"><i style="width:0%"></i></div><span class="dist__v">0</span></div>
+        <div class="dist"><span class="dist__k">B</span><div class="dist__bar"><i style="width:0%"></i></div><span class="dist__v">0</span></div>
+        <div class="dist"><span class="dist__k">C</span><div class="dist__bar"><i style="width:0%"></i></div><span class="dist__v">0</span></div>
+        <div class="dist"><span class="dist__k">D</span><div class="dist__bar"><i style="width:0%"></i></div><span class="dist__v">0</span></div>
+        <div class="dist"><span class="dist__k">E</span><div class="dist__bar"><i style="width:0%"></i></div><span class="dist__v">0</span></div>
+      </div>
+
+      <div class="ds-heading" style="margin-top:26px"><span class="ds-en">Leaderboard · Top XP</span><h2>อันดับคะแนน</h2></div>
+      <div class="ds-card"><div id="lbList"><p class="ds-muted ds-center" style="padding:14px 0">ยังไม่มีคะแนน</p></div></div>
+    </section>
+
+    <!-- Right: current mission / question -->
+    <section class="host-col">
+      <div class="ds-heading"><span class="ds-en">Current</span><h2>ภารกิจ / คำถามปัจจุบัน</h2></div>
+      <div class="ds-card ds-empty">
+        <span class="ds-feat"><span data-icon="play"></span></span>
+        <h3>ยังไม่เริ่มเซสชัน</h3>
+        <p>กด “เริ่มเซสชัน” เพื่อเปิดห้องให้ผู้เรียนเข้าร่วม</p>
+        <span class="ds-note">Phase 5 · แผงควบคุม Host แบบเรียลไทม์</span>
+      </div>
+    </section>
+  </main>
+
+  <!-- Quick control bar (fixed, thumb-friendly) -->
+  <div class="quickbar" role="toolbar" aria-label="แถบควบคุมด่วน">
+    <button class="ds-btn ds-btn--primary qb" data-act="start" disabled><span data-icon="play"></span> เริ่ม <small>start</small></button>
+    <button class="ds-btn ds-btn--ghost qb" data-act="lock" disabled><span data-icon="lock"></span> ล็อก <small>lock</small></button>
+    <button class="ds-btn ds-btn--cyan qb" data-act="results" disabled><span data-icon="chart"></span> ผลลัพธ์ <small>results</small></button>
+    <button class="ds-btn ds-btn--ghost qb" data-act="explain" disabled><span data-icon="reveal"></span> เฉลย <small>explain</small></button>
+    <button class="ds-btn ds-btn--ghost qb" data-act="next" disabled><span data-icon="next"></span> ถัดไป <small>next</small></button>
+  </div>
+</div>
+
+<script type="module" src="js/ui.js"></script>
+<script type="module" src="js/host.js"></script>
+</body>
+</html>

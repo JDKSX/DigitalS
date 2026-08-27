@@ -1,0 +1,407 @@
+/* =================================================================
+   Host controller (host.html) — DIGITAL SURVIVAL
+   Phase 5: full live control of the session state machine —
+   pick a mission, START / LOCK / RESULTS / EXPLAIN / NEXT, with live
+   player, answered and answer-distribution stats.
+   ================================================================= */
+import { onAuth, signInStaff, getRole, authErrorTh } from './auth.js';
+import { createSession, listenSession, listenPlayers, listenQuestionAnswers, updateSession,
+  getQuestionAnswersOnce, getMissionPlayers, applyScores, markScored, markMissionComplete, writeLeaderboard,
+  createDemoPlayers, submitAnswer } from './session.js';
+import { loadContent, loadQuestions, questionCount } from './content.js';
+import { scoreQuestionAnswers } from './scoring.js';
+import { icon, hydrateIcons } from './icons.js';
+
+const $ = (s) => document.querySelector(s);
+const HOST_KEY = 'ds-host-session';
+const state = { uid: null, sid: null, session: null, players: [], content: null };
+let unsubSession = null, unsubPlayers = null, unsubAnswers = null, answersQid = null, timerIv = null;
+const scoredLocal = new Set();
+const demoAnsweredQ = new Set();
+let lastLbKey = '';
+
+/* ---------------- staff login ---------------- */
+function showLogin() {
+  if ($('.ds-modal-backdrop')) return;
+  const back = document.createElement('div');
+  back.className = 'ds-modal-backdrop';
+  back.innerHTML = `
+    <div class="ds-modal" role="dialog" aria-modal="true" aria-labelledby="loTitle">
+      <p class="ds-en" style="color:var(--cyan)">Staff Login</p>
+      <h2 id="loTitle">เข้าสู่ระบบวิทยากร</h2>
+      <div class="ds-form-row"><label class="ds-label" for="loEmail">อีเมล <span class="ds-en">email</span></label>
+        <input id="loEmail" class="ds-input" type="email" autocomplete="username" placeholder="host@example.com"></div>
+      <div class="ds-form-row"><label class="ds-label" for="loPass">รหัสผ่าน <span class="ds-en">password</span></label>
+        <input id="loPass" class="ds-input" type="password" autocomplete="current-password" placeholder="••••••••"></div>
+      <div class="ds-form-err" id="loErr" hidden></div>
+      <button class="ds-btn ds-btn--primary ds-btn--block" id="loGo" type="button" style="margin-top:22px">เข้าสู่ระบบ</button>
+      <p class="ds-muted" style="font-size:.8rem;margin-top:14px">บัญชีวิทยากรสร้างใน Firebase Console + เพิ่ม <span class="ds-mono">staff/{uid}</span> (ดู README)</p>
+    </div>`;
+  document.body.appendChild(back);
+  const email = $('#loEmail'), pass = $('#loPass'), err = $('#loErr'), go = $('#loGo');
+  email.focus();
+  async function submit() {
+    err.hidden = true; go.disabled = true; go.textContent = 'กำลังเข้าสู่ระบบ…';
+    try { await signInStaff(email.value, pass.value); back.remove(); }
+    catch (e) { err.hidden = false; err.textContent = authErrorTh(e); go.disabled = false; go.textContent = 'เข้าสู่ระบบ'; }
+  }
+  go.addEventListener('click', submit);
+  [email, pass].forEach((el) => el.addEventListener('keydown', (e) => { if (e.key === 'Enter') submit(); }));
+}
+
+/* ---------------- boot ---------------- */
+onAuth(async (user) => {
+  if (!user) return showLogin();
+  const role = await getRole(user.uid);
+  if (!role) return showLogin();
+  document.querySelector('.ds-modal-backdrop')?.remove(); // clear any stale login modal
+  state.uid = user.uid;
+  state.content = await loadContent().catch(() => ({ missions: [] }));
+  state.questions = await loadQuestions().catch(() => ({}));
+  let sid = null; try { sid = localStorage.getItem(HOST_KEY); } catch (_e) {}
+  if (sid) attachSession(sid); else renderCreate();
+});
+
+/* ---------------- create session ---------------- */
+function renderCreate() {
+  const panel = $('.host-col:last-child .ds-card');
+  panel.className = 'ds-card ds-empty';
+  panel.innerHTML = `<span class="ds-feat">${icon('play')}</span>
+    <h3>พร้อมเริ่มกิจกรรม</h3><p>สร้างเซสชันจริง หรือโหมดทดสอบพร้อมบอต 10 ตัว</p>
+    <div class="ds-row" style="gap:10px;flex-wrap:wrap;justify-content:center">
+      <button class="ds-btn ds-btn--primary" id="mkSession">${icon('sparkles')} สร้างเซสชัน</button>
+      <button class="ds-btn ds-btn--ghost" id="mkDemo">${icon('cpu')} DEMO + 10 บอท</button>
+    </div>`;
+  $('#mkSession').addEventListener('click', () => doCreate(false));
+  $('#mkDemo').addEventListener('click', () => doCreate(true));
+}
+async function doCreate(demo) {
+  $('#mkSession').disabled = true; $('#mkDemo').disabled = true;
+  try {
+    const s = await createSession(state.uid, { demo });
+    if (demo) await createDemoPlayers(s.id, 10);
+    localStorage.setItem(HOST_KEY, s.id);
+    attachSession(s.id);
+  } catch (e) { alert('สร้างไม่สำเร็จ: ' + (e.message || e)); renderCreate(); }
+}
+
+/* ---------------- attach + control skeleton ---------------- */
+function attachSession(sid) {
+  state.sid = sid;
+  if (unsubSession) unsubSession();
+  if (unsubPlayers) unsubPlayers();
+  buildControlSkeleton();
+
+  unsubSession = listenSession(sid, (s) => {
+    if (!s) { try { localStorage.removeItem(HOST_KEY); } catch (_e) {} location.reload(); return; }
+    state.session = s;
+    renderControl(s);
+    watchAnswers(s);
+  });
+  unsubPlayers = listenPlayers(sid, (players) => { state.players = players; renderStats(); });
+
+  document.querySelectorAll('.quickbar [data-act]').forEach((b) => {
+    if (b.dataset.wired) return; b.dataset.wired = '1';
+    b.addEventListener('click', () => onAction(b.dataset.act));
+  });
+}
+
+function buildControlSkeleton() {
+  const panel = $('.host-col:last-child .ds-card');
+  panel.className = 'ds-card';
+  const missions = state.content.missions || [];
+  panel.innerHTML = `
+    <div class="ds-between">
+      <div><span class="ds-en">รหัสห้อง · session code</span>
+        <div class="host-code" id="hostCodeBig">—</div></div>
+      <div class="ds-row" style="gap:8px">
+        <a class="ds-chip" id="presenterLink" href="presenter.html" target="_blank" rel="noopener">${icon('chart')} เปิดจอฉาย ↗</a>
+        <button class="ds-chip" id="endSession" type="button">${icon('trophy')} จบกิจกรรม</button>
+        <button class="ds-chip" id="newSession" type="button">${icon('sparkles')} เซสชันใหม่</button>
+      </div>
+    </div>
+    <div class="host-phase" id="hostPhase"></div>
+    <div class="ds-heading" style="margin-top:18px"><span class="ds-en">เลือกภารกิจ · missions</span></div>
+    <div class="mission-grid" id="missionGrid">
+      ${missions.map((m) => `<button class="m-tile" data-mid="${m.id}">
+        <span class="m-tile__ic">${icon(m.icon || 'shield')}</span>
+        <span class="m-tile__no">${m.id === 'boss' ? 'BOSS' : String(m.no).padStart(2, '0')}</span>
+        <span class="m-tile__t">${m.titleTh}</span></button>`).join('')}
+    </div>
+    <div class="current-q" id="currentQ"></div>`;
+  hydrateIcons(panel);
+  panel.querySelectorAll('.m-tile').forEach((t) => t.addEventListener('click', () => startMission(t.dataset.mid)));
+  const es = panel.querySelector('#endSession');
+  if (es) es.addEventListener('click', () => {
+    if (confirm('จบกิจกรรม? ผู้เรียนจะเห็นหน้าสรุปผล (Digital Survivor) และห้องจะปิด')) {
+      updateSession(state.sid, { status: 'closed' }).catch((e) => alert('ปิดไม่สำเร็จ: ' + (e.message || e)));
+    }
+  });
+  const ns = panel.querySelector('#newSession');
+  if (ns) ns.addEventListener('click', () => {
+    if (confirm('สร้างเซสชันใหม่? (เซสชันปัจจุบันจะยังอยู่ในระบบ ดูย้อนหลังได้ที่ Admin)')) {
+      try { localStorage.removeItem(HOST_KEY); } catch (_e) {}
+      scoredLocal.clear(); demoAnsweredQ.clear(); lastLbKey = '';
+      if (unsubSession) unsubSession(); if (unsubPlayers) unsubPlayers(); if (unsubAnswers) unsubAnswers();
+      state.sid = null; state.session = null;
+      renderCreate();
+    }
+  });
+}
+
+/* ---------------- render ---------------- */
+function renderControl(s) {
+  setText('#hostCodeBig', s.code);
+  const chip = document.querySelector('.role-chip b'); if (chip) chip.textContent = s.code;
+  const pl = $('#presenterLink'); if (pl) pl.href = `presenter.html?s=${s.code}`;
+  setHTML('#hostPhase', `<span class="ds-chip">สถานะ: <b style="color:var(--text);margin-left:4px">${phaseTh(s.phase)}</b></span>
+    <span class="host-hint">${icon('sparkles')} ${hostHint(s)}</span>`);
+  hydrateIcons($('#hostPhase'));
+
+  document.querySelectorAll('.m-tile').forEach((t) => t.classList.toggle('is-active', t.dataset.mid === s.currentMission));
+
+  const m = (state.content.missions || []).find((x) => x.id === s.currentMission);
+  const cq = $('#currentQ');
+  if (cq) {
+    if (!s.currentMission) cq.innerHTML = `<p class="ds-muted ds-center" style="padding:16px 0">แตะภารกิจด้านบนเพื่อเริ่ม</p>`;
+    else { const total = questionCount(state.questions, s.currentMission); cq.innerHTML = `
+      <div class="ds-between" style="margin-top:6px">
+        <div><span class="ds-en">${m ? m.title : ''}</span><div style="font-family:var(--font-display);font-weight:700;font-size:1.15rem">${m ? m.titleTh : s.currentMission}</div>
+          <span class="ds-muted" style="font-size:.85rem">${s.currentQuestion ? `ข้อ ${s.questionIndex || 1}${total ? ' / ' + total : ''}` : (total ? `${total} ข้อ · ยังไม่เริ่ม` : 'ยังไม่มีคำถาม (เพิ่มใน questions.json)')}</span></div>
+        <div class="host-timer" id="hostTimer"></div>
+      </div>`; }
+  }
+  updateQuickbar(s);
+  runTimer(s);
+  maybeScore(s);
+  if (s.demo) maybeDemo(s);
+}
+
+/* ---------------- demo bots (§40) ---------------- */
+async function maybeDemo(s) {
+  if (s.phase !== 'question_open' || !s.currentQuestion) return;
+  const qid = s.currentQuestion;
+  if (demoAnsweredQ.has(qid)) return;
+  demoAnsweredQ.add(qid);
+  const q = state.questions[qid];
+  if (!q) return;
+  const bots = state.players.filter((p) => p.room === 'DEMO' || (p.nickname || '').startsWith('Bot-'));
+  bots.forEach((bot) => {
+    const delay = 600 + Math.floor(Math.random() * 9000);
+    setTimeout(() => {
+      const a = simulateAnswer(q);
+      submitAnswer({ sessionId: state.sid, playerId: bot.playerId }, a).catch(() => {});
+    }, delay);
+  });
+}
+function simulateAnswer(q) {
+  const correct = Math.random() < 0.6;
+  let choice, isCorrect = correct;
+  if (q.type === 'scenario' || q.type === 'investigation') {
+    if (correct) choice = q.correct;
+    else { const wrong = q.options.map((o) => o.key).filter((k) => k !== q.correct); choice = wrong[Math.floor(Math.random() * wrong.length)] || q.correct; }
+  } else if (q.type === 'dragsort') {
+    choice = {}; q.cards.forEach((c) => { choice[c.id] = correct ? c.correct : q.buckets[Math.floor(Math.random() * q.buckets.length)].key; });
+    isCorrect = q.cards.every((c) => choice[c.id] === c.correct);
+  } else if (q.type === 'ordering') {
+    choice = correct ? [...q.correctOrder] : [...q.steps].map((s) => s.id).sort(() => Math.random() - 0.5);
+    isCorrect = choice.every((id, i) => id === q.correctOrder[i]);
+  } else if (q.type === 'assessment') {
+    choice = {}; q.statements.forEach((s) => { choice[s.id] = Math.floor(Math.random() * 4); }); isCorrect = null;
+  } else { choice = 'A'; }
+  return { questionId: q.id, missionId: q.missionId, choice, isCorrect, responseMs: 1000 + Math.floor(Math.random() * 14000) };
+}
+
+/* ---------------- scoring at reveal (idempotent, staff-only) ---------------- */
+async function maybeScore(s) {
+  if (s.phase !== 'revealed' || !s.currentQuestion) return;
+  const qid = s.currentQuestion;
+  if (scoredLocal.has(qid) || (s.scoredQuestions || []).includes(qid)) return;
+  scoredLocal.add(qid);
+  try {
+    const q = state.questions[qid];
+    if (!q) return;
+    const rules = (state.content && state.content.xpRules) || {};
+    const answers = await getQuestionAnswersOnce(state.sid, qid);
+    const updates = scoreQuestionAnswers(q, answers, rules);
+
+    const count = questionCount(state.questions, s.currentMission);
+    const isLast = count && (s.questionIndex || 0) >= count;
+    const alreadyDone = (s.completedMissions || []).includes(s.currentMission);
+    if (isLast && !alreadyDone) {
+      const mission = (state.content.missions || []).find((m) => m.id === s.currentMission);
+      const badge = mission && mission.badge;
+      const bonus = rules.missionComplete || 100;
+      const players = await getMissionPlayers(state.sid, s.currentMission);
+      players.forEach((pid) => {
+        let u = updates.find((x) => x.playerId === pid);
+        if (!u) { u = { playerId: pid, missionId: s.currentMission, xpDelta: 0 }; updates.push(u); }
+        u.xpDelta += bonus; if (badge) u.badge = badge; u.progressDelta = 1;
+      });
+    }
+    await applyScores(state.sid, updates);
+    await markScored(state.sid, qid);
+    if (isLast && !alreadyDone) await markMissionComplete(state.sid, s.currentMission);
+  } catch (e) {
+    scoredLocal.delete(qid); // allow retry on next snapshot
+    console.warn('scoring failed', e);
+  }
+}
+
+function renderStats() {
+  const online = state.players.filter((p) => p.lastSeen && p.lastSeen.toMillis && (Date.now() - p.lastSeen.toMillis() < 90000)).length;
+  setStat(0, online);
+  setStat(1, state.players.length);
+  const xps = state.players.map((p) => p.xp || 0);
+  setStat(3, xps.length ? Math.round(xps.reduce((a, b) => a + b, 0) / xps.length) : 0);
+  // Denormalize counts onto the session doc so the (anonymous) presenter can read them.
+  maybePush({ playersOnline: online, playersJoined: state.players.length });
+  renderLeaderboard();
+}
+
+/* ---------------- leaderboard ---------------- */
+function renderLeaderboard() {
+  const top = [...state.players]
+    .map((p) => ({ playerId: p.playerId || '—', nickname: p.nickname || '—', xp: p.xp || 0 }))
+    .sort((a, b) => b.xp - a.xp).slice(0, 10);
+  const el = document.getElementById('lbList');
+  if (el) {
+    el.innerHTML = top.length ? top.map((p, i) => `<div class="lb-row">
+      <span class="lb-rank ${i < 3 ? 'lb-rank--top' : ''}">${i + 1}</span>
+      <span class="lb-name">${esc(p.nickname) || '—'} <span class="ds-pid">${esc(p.playerId)}</span></span>
+      <span class="lb-xp">${(p.xp || 0).toLocaleString('en-US')}</span></div>`).join('')
+      : '<p class="ds-muted ds-center" style="padding:14px 0">ยังไม่มีคะแนน</p>';
+  }
+  // Persist top-N (no private data) for presenter/students — only when changed.
+  const key = top.map((p) => `${p.playerId}:${p.xp}`).join('|');
+  if (key !== lastLbKey && state.sid && state.sid !== 'demo') { lastLbKey = key; writeLeaderboard(state.sid, top).catch(() => {}); }
+}
+
+/** Throttle answeredCount denormalization to at most ~1 write / 1.5s. */
+let answeredTimer = null, answeredPending = null;
+function pushAnsweredThrottled(count) {
+  answeredPending = count;
+  if (answeredTimer) return;
+  answeredTimer = setTimeout(() => { answeredTimer = null; maybePush({ answeredCount: answeredPending }); }, 1500);
+}
+
+/** Write to the session only when a value actually changed (saves writes §26). */
+function maybePush(patch) {
+  const s = state.session; if (!s) return;
+  const diff = {};
+  Object.keys(patch).forEach((k) => { if (s[k] !== patch[k]) diff[k] = patch[k]; });
+  if (Object.keys(diff).length) updateSession(state.sid, diff).catch(() => {});
+}
+
+function watchAnswers(s) {
+  const qid = s.currentQuestion;
+  if (qid === answersQid) return;
+  answersQid = qid;
+  if (unsubAnswers) { unsubAnswers(); unsubAnswers = null; }
+  if (!qid) { setStat(2, 0); paintDistribution([]); return; }
+  unsubAnswers = listenQuestionAnswers(state.sid, qid, (answers) => {
+    setStat(2, answers.length);
+    paintDistribution(answers);
+    pushAnsweredThrottled(answers.length); // throttle session writes (§26)
+  });
+}
+
+function paintDistribution(answers) {
+  const counts = { A: 0, B: 0, C: 0, D: 0, E: 0 };
+  answers.forEach((a) => { const c = typeof a.choice === 'string' ? a.choice.toUpperCase() : null; if (c && counts[c] != null) counts[c]++; });
+  const total = answers.length || 1;
+  ['A', 'B', 'C', 'D', 'E'].forEach((k, i) => {
+    const row = document.querySelectorAll('.dist')[i]; if (!row) return;
+    row.querySelector('.dist__bar i').style.width = Math.round((counts[k] / total) * 100) + '%';
+    row.querySelector('.dist__v').textContent = counts[k];
+  });
+}
+
+/* ---------------- actions (state machine) ---------------- */
+function startMission(mid) {
+  updateSession(state.sid, { currentMission: mid, phase: 'mission_intro', currentQuestion: null, questionIndex: 0, showExplanation: false });
+}
+function onAction(act) {
+  const s = state.session; if (!s) return;
+  const openNext = () => {
+    const count = questionCount(state.questions, s.currentMission);
+    const n = (s.questionIndex || 0) + 1;
+    if (count && n > count) { alert('ครบทุกข้อของภารกิจนี้แล้ว — เลือกภารกิจถัดไปได้เลย'); return; }
+    updateSession(state.sid, { phase: 'question_open', currentQuestion: `${s.currentMission}_q${n}`, questionIndex: n, questionStartAt: Date.now(), showExplanation: false });
+  };
+  if (act === 'start') {
+    if (!s.currentMission) { alert('เลือกภารกิจก่อน'); return; }
+    openNext();
+  } else if (act === 'lock') {
+    updateSession(state.sid, { phase: 'locked' });
+  } else if (act === 'results') {
+    updateSession(state.sid, { phase: 'revealed', showExplanation: false });
+  } else if (act === 'explain') {
+    updateSession(state.sid, { phase: 'revealed', showExplanation: true });
+  } else if (act === 'next') {
+    openNext();
+  }
+}
+
+function updateQuickbar(s) {
+  const en = { start: false, lock: false, results: false, explain: false, next: false };
+  const p = s.phase;
+  if (!s.currentMission) { /* all disabled except nothing */ }
+  else if (p === 'mission_intro' || p === 'lobby') en.start = true;
+  else if (p === 'question_open') { en.lock = true; }
+  else if (p === 'locked') { en.results = true; en.explain = true; }
+  else if (p === 'revealed') {
+    const count = questionCount(state.questions, s.currentMission);
+    const more = !count || (s.questionIndex || 0) < count;
+    en.explain = true; en.next = more; en.start = more;
+  }
+  document.querySelectorAll('.quickbar [data-act]').forEach((b) => { b.disabled = !en[b.dataset.act]; });
+}
+
+/* ---------------- timer ---------------- */
+function runTimer(s) {
+  if (timerIv) { clearInterval(timerIv); timerIv = null; }
+  const el = () => $('#hostTimer');
+  if (s.phase !== 'question_open' || !s.questionStartAt) { if (el()) el().textContent = ''; return; }
+  const start = typeof s.questionStartAt === 'number' ? s.questionStartAt : (s.questionStartAt.toMillis ? s.questionStartAt.toMillis() : Date.now());
+  const dur = (s.questionDuration || 30) * 1000;
+  const tick = () => {
+    const left = Math.max(0, Math.ceil((start + dur - Date.now()) / 1000));
+    const t = el(); if (t) { t.textContent = fmtTime(left); t.classList.toggle('is-low', left <= 10); }
+    if (left <= 0 && timerIv) { clearInterval(timerIv); timerIv = null; }
+  };
+  tick(); timerIv = setInterval(tick, 500);
+}
+
+/* ---------------- utils ---------------- */
+function phaseTh(p) { return ({ lobby: 'ห้องรอ', mission_intro: 'เกริ่นภารกิจ', question_open: 'กำลังตอบ', locked: 'ล็อกคำตอบ', revealed: 'เฉลยแล้ว', paused: 'พักชั่วคราว' })[p] || p || '—'; }
+/** Contextual "what to do next" hint for the host, by phase. */
+function hostHint(s) {
+  if (!s.currentMission) return 'แตะการ์ดภารกิจด้านล่างเพื่อเริ่ม';
+  switch (s.phase) {
+    case 'mission_intro': return 'เกริ่นนำสั้นๆ แล้วกด “เริ่ม” เพื่อเปิดคำถาม';
+    case 'question_open': return 'รอเด็กตอบ · กด “ล็อก” เมื่อตอบครบหรือหมดเวลา';
+    case 'locked': return 'กด “ผลลัพธ์” เพื่อเฉลย + ขึ้นแท่นคะแนน';
+    case 'revealed': return 'อภิปรายเฉลย แล้วกด “ถัดไป” หรือแตะภารกิจใหม่';
+    default: return 'แตะการ์ดภารกิจเพื่อเริ่ม';
+  }
+}
+function fmtTime(sec) { const m = Math.floor(sec / 60), s = sec % 60; return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`; }
+function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+function setStat(i, v) { const el = document.querySelectorAll('.stat .ds-stat__num')[i]; if (el) el.textContent = v; }
+function setText(sel, t) { const el = $(sel); if (el) el.textContent = t; }
+function setHTML(sel, h) { const el = $(sel); if (el) el.innerHTML = h; }
+
+/* Localhost-only UI preview (no Firestore writes) for visual verification. */
+if (location.hostname === 'localhost') {
+  window.__hostDemo = async (patch) => {
+    document.querySelector('.ds-modal-backdrop')?.remove();
+    state.content = await loadContent().catch(() => ({ missions: [] }));
+    state.sid = 'demo';
+    buildControlSkeleton();
+    state.session = { code: 'DEMO1', phase: 'mission_intro', currentMission: 'm4', questionIndex: 0, playersJoined: 24, ...(patch || {}) };
+    renderControl(state.session);
+    state.players = Array.from({ length: 24 }, (_, i) => ({ playerId: 'P' + String(i + 1).padStart(3, '0'), nickname: 'Player' + (i + 1), xp: i * 40, lastSeen: { toMillis: () => Date.now() } }));
+    renderStats();
+  };
+}

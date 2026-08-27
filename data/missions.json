@@ -1,0 +1,47 @@
+{
+  "meta": {
+    "project": "DIGITAL SURVIVAL",
+    "tagline_th": "8 ภารกิจเอาตัวรอดในโลกดิจิทัล",
+    "tagline_en": "8 Missions to Survive the Digital World",
+    "version": "0.2.0",
+    "note": "Thai-first: *Th fields are primary display, English fields are secondary/brand tags. Questions live in questions.json (Phase 7)."
+  },
+  "levels": [
+    { "level": 1, "nameTh": "มือใหม่ดิจิทัล",   "name": "Digital Rookie",    "minXp": 0 },
+    { "level": 2, "nameTh": "ผู้ใช้อัจฉริยะ",    "name": "Smart User",        "minXp": 800 },
+    { "level": 3, "nameTh": "นักสืบดิจิทัล",     "name": "Digital Detective", "minXp": 1800 },
+    { "level": 4, "nameTh": "ผู้พิทักษ์ไซเบอร์", "name": "Cyber Guardian",    "minXp": 3200 },
+    { "level": 5, "nameTh": "ผู้รอดชีวิตดิจิทัล","name": "Digital Survivor",  "minXp": 5000 }
+  ],
+  "xpRules": {
+    "correct": 100,
+    "fastBonus": 20,
+    "fastBonusWithinMs": 8000,
+    "missionComplete": 100,
+    "criticalThinking": 200,
+    "finalBoss": 500,
+    "note": "ให้ความเร็วน้ำหนักน้อย (§10) — คุณภาพการตัดสินใจเป็นตัวหลัก"
+  },
+  "badges": [
+    { "id": "digital_citizen", "mission": 1, "nameTh": "พลเมืองดิจิทัล",   "name": "DIGITAL CITIZEN", "icon": "id" },
+    { "id": "digital_shadow",  "mission": 2, "nameTh": "เงาดิจิทัล",        "name": "DIGITAL SHADOW",  "icon": "shadow" },
+    { "id": "cyber_guardian",  "mission": 3, "nameTh": "ผู้พิทักษ์ไซเบอร์", "name": "CYBER GUARDIAN",  "icon": "shield" },
+    { "id": "fact_checker",    "mission": 4, "nameTh": "นักตรวจสอบข่าว",    "name": "FACT CHECKER",    "icon": "search" },
+    { "id": "kind_typer",      "mission": 5, "nameTh": "นักพิมพ์ใจดี",      "name": "KIND TYPER",      "icon": "chat" },
+    { "id": "data_guardian",   "mission": 6, "nameTh": "ผู้พิทักษ์ข้อมูล",  "name": "DATA GUARDIAN",   "icon": "lock" },
+    { "id": "ai_detective",    "mission": 7, "nameTh": "นักสืบ AI",         "name": "AI DETECTIVE",    "icon": "cpu" },
+    { "id": "balanced_user",   "mission": 8, "nameTh": "ผู้ใช้สมดุล",       "name": "BALANCED USER",   "icon": "balance" },
+    { "id": "digital_survivor","mission": 0, "nameTh": "ผู้รอดชีวิตดิจิทัล", "name": "DIGITAL SURVIVOR","icon": "trophy", "requiresAll": true }
+  ],
+  "missions": [
+    { "id": "m1", "no": 1, "titleTh": "ตัวตนของคุณบนโลกออนไลน์", "title": "WHO ARE YOU ONLINE?", "topicTh": "พลเมืองดิจิทัล",       "topic": "Digital Citizenship",        "type": "scenario",      "icon": "id",      "badge": "digital_citizen", "intro": "ทุกการกระทำสะท้อนว่าคุณเป็นพลเมืองดิจิทัลแบบไหน" },
+    { "id": "m2", "no": 2, "titleTh": "เงาดิจิทัลของคุณ",         "title": "YOUR DIGITAL SHADOW", "topicTh": "ร่องรอยดิจิทัล",       "topic": "Digital Footprint",          "type": "dragsort",      "icon": "shadow",  "badge": "digital_shadow",  "intro": "ทุกอย่างที่คุณทิ้งไว้ ทั้งที่ตั้งใจและไม่ตั้งใจ" },
+    { "id": "m3", "no": 3, "titleTh": "อย่าโดนแฮ็ก",              "title": "DON'T GET HACKED",    "topicTh": "ความปลอดภัยไซเบอร์",   "topic": "Cyber Safety",               "type": "scenario",      "icon": "shield",  "badge": "cyber_guardian",  "intro": "หยุด · ตรวจสอบ · อย่ากด · ยืนยัน" },
+    { "id": "m4", "no": 4, "titleTh": "จริงหรือปลอม?",            "title": "FAKE OR FACT?",       "topicTh": "รู้ทันข่าวและสื่อ",    "topic": "Fake News & Media Literacy", "type": "investigation", "icon": "search",  "badge": "fact_checker",    "intro": "คุณคือนักสืบดิจิทัล — ตรวจสอบก่อนเชื่อ ก่อนแชร์" },
+    { "id": "m5", "no": 5, "titleTh": "คิดก่อนพิมพ์",             "title": "THINK BEFORE YOU TYPE","topicTh": "การกลั่นแกล้งและมารยาทออนไลน์", "topic": "Cyberbullying & Etiquette", "type": "scenario",  "icon": "chat",    "badge": "kind_typer",      "intro": "คำพูดบนจอมีผลกับคนจริง" },
+    { "id": "m6", "no": 6, "titleTh": "ผู้พิทักษ์ข้อมูล",         "title": "DATA GUARDIAN",       "topicTh": "ความเป็นส่วนตัวและข้อมูลส่วนบุคคล", "topic": "Privacy & Personal Data", "type": "dragsort", "icon": "lock",    "badge": "data_guardian",   "intro": "ปลอดภัย · เสี่ยง · ห้ามแชร์เด็ดขาด" },
+    { "id": "m7", "no": 7, "titleTh": "เชื่อ AI ได้ไหม?",         "title": "CAN YOU TRUST AI?",   "topicTh": "รู้เท่าทัน AI",        "topic": "AI Literacy",                "type": "investigation", "icon": "cpu",     "badge": "ai_detective",    "intro": "เชื่อ · ตรวจสอบ · ปฏิเสธ — ใช้ AI อย่างรู้เท่าทัน" },
+    { "id": "m8", "no": 8, "titleTh": "ทวงคืนสมดุล",              "title": "TAKE BACK CONTROL",   "topicTh": "สุขภาวะดิจิทัล",       "topic": "Digital Well-being",         "type": "assessment",    "icon": "balance", "badge": "balanced_user",   "intro": "ประเมินพฤติกรรมดิจิทัล (Digital Habit Profile) — ไม่ใช่การวินิจฉัยทางการแพทย์" },
+    { "id": "boss", "no": 9, "titleTh": "การตัดสินใจครั้งสุดท้าย", "title": "THE DIGITAL DECISION","topicTh": "บอสรวมทุกหัวข้อ",      "topic": "Final Boss",                 "type": "ordering",      "icon": "trophy",  "badge": "digital_survivor","intro": "รวมทุกหัวข้อไว้ในสถานการณ์เดียว — เรียงลำดับการตัดสินใจให้ถูกต้อง" }
+  ]
+}

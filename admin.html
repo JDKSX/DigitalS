@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>ผู้ดูแล · DIGITAL SURVIVAL</title>
+  <meta name="theme-color" content="#070E1C">
+  <script>try{document.documentElement.setAttribute('data-theme',localStorage.getItem('ds-theme')||'dark')}catch(e){document.documentElement.setAttribute('data-theme','dark')}</script>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/admin.css">
+</head>
+<body>
+<div class="app-shell">
+  <header class="app-header">
+    <a class="brand" href="index.html">
+      <span class="brand__logo"><span data-icon="shield"></span></span>
+      <span class="brand__txt"><b>DIGITAL SURVIVAL</b><small>ผู้ดูแลระบบ · Admin</small></span>
+    </a>
+    <div class="app-header__right">
+      <span class="role-chip"><span data-icon="cpu"></span> ผู้ดูแล <small>admin</small></span>
+      <button class="ds-iconbtn" data-role="theme-toggle" type="button" aria-label="สลับธีมสว่าง/มืด" title="สลับธีม">
+        <span class="icon-sun" data-icon="sun"></span><span class="icon-moon" data-icon="moon"></span>
+      </button>
+    </div>
+  </header>
+
+  <nav class="admin-tabs" role="tablist" aria-label="เมนูผู้ดูแล">
+    <button class="admin-tab is-active" role="tab" aria-selected="true" data-tab="content"><span data-icon="chat"></span> เนื้อหา <span class="ds-en">content</span></button>
+    <button class="admin-tab" role="tab" aria-selected="false" data-tab="analytics"><span data-icon="chart"></span> วิเคราะห์ <span class="ds-en">analytics</span></button>
+    <button class="admin-tab" role="tab" aria-selected="false" data-tab="export"><span data-icon="reveal"></span> ส่งออก <span class="ds-en">export</span></button>
+    <button class="admin-tab" role="tab" aria-selected="false" data-tab="sessions"><span data-icon="users"></span> เซสชัน <span class="ds-en">sessions</span></button>
+  </nav>
+
+  <main class="app-main admin-main">
+    <section class="admin-panel is-active" id="tab-content" role="tabpanel">
+      <div class="ds-card ds-empty">
+        <span class="ds-feat ds-feat--violet"><span data-icon="chat"></span></span>
+        <h3>จัดการเนื้อหา 8 ภารกิจ + บอสสุดท้าย</h3>
+        <p>แก้ไขคำถาม/สถานการณ์/กิจกรรม ผ่านไฟล์ JSON แยกจากเกมเอนจิน</p>
+        <span class="ds-note">Phase 7 · เนื้อหาภารกิจ · Phase 9 · เครื่องมือผู้ดูแล</span>
+      </div>
+    </section>
+    <section class="admin-panel" id="tab-analytics" role="tabpanel" hidden>
+      <div class="ds-card ds-empty">
+        <span class="ds-feat"><span data-icon="chart"></span></span>
+        <h3>สรุปผลหลังกิจกรรม</h3>
+        <p>ผู้เข้าร่วม · อัตราจบ · คะแนนเฉลี่ย · ภารกิจ/ข้อที่ตอบผิดมากสุด</p>
+        <span class="ds-note">Phase 9 · Analytics</span>
+      </div>
+    </section>
+    <section class="admin-panel" id="tab-export" role="tabpanel" hidden>
+      <div class="ds-card ds-empty">
+        <span class="ds-feat ds-feat--gold"><span data-icon="reveal"></span></span>
+        <h3>ส่งออกข้อมูล</h3>
+        <p>ดาวน์โหลด CSV และ XLSX — คะแนนรายภารกิจ · XP · เลเวล · เหรียญตรา</p>
+        <span class="ds-note">Phase 9 · Export</span>
+      </div>
+    </section>
+    <section class="admin-panel" id="tab-sessions" role="tabpanel" hidden>
+      <div class="ds-card ds-empty">
+        <span class="ds-feat ds-feat--electric"><span data-icon="users"></span></span>
+        <h3>จัดการเซสชัน</h3>
+        <p>สร้าง · รีเซ็ต · เก็บถาวร · ดูข้อมูลย้อนหลัง</p>
+        <span class="ds-note">Phase 11 · Demo Mode · Phase 9 · Sessions</span>
+      </div>
+    </section>
+  </main>
+
+  <footer class="app-footer">
+    <span>เข้าถึงเฉพาะผู้ดูแลที่ยืนยันตัวตน (Email/Password) — Phase 3</span>
+    <a href="host.html">ไปแผงวิทยากร <span class="ds-en">Host</span></a>
+  </footer>
+</div>
+
+<script type="module" src="js/ui.js"></script>
+<script type="module" src="js/admin.js"></script>
+<script>
+  // Local tab switching (no backend needed)
+  var tabs = document.querySelectorAll('.admin-tab');
+  var panels = document.querySelectorAll('.admin-panel');
+  tabs.forEach(function (t) {
+    t.addEventListener('click', function () {
+      tabs.forEach(function (x) { x.classList.remove('is-active'); x.setAttribute('aria-selected', 'false'); });
+      panels.forEach(function (p) { p.classList.remove('is-active'); p.hidden = true; });
+      t.classList.add('is-active'); t.setAttribute('aria-selected', 'true');
+      var pane = document.getElementById('tab-' + t.dataset.tab);
+      pane.classList.add('is-active'); pane.hidden = false;
+    });
+  });
+</script>
+</body>
+</html>

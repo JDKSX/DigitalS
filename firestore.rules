@@ -1,0 +1,84 @@
+rules_version = '2';
+// =================================================================
+// DIGITAL SURVIVAL — Firestore Security Rules (Phase 10 hardened)
+// Model: students write ONLY their own answers (immutable) and their own
+// presence (lastSeen). XP / badges / scores are written by staff at reveal
+// — students cannot change them (verified by attack tests §38).
+// =================================================================
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() { return request.auth != null; }
+    function isStaff()  { return signedIn() && exists(/databases/$(database)/documents/staff/$(request.auth.uid)); }
+    function role()     { return get(/databases/$(database)/documents/staff/$(request.auth.uid)).data.role; }
+    function isAdmin()  { return isStaff() && role() == 'admin'; }
+    function ownsExisting() { return signedIn() && resource.data.authUid == request.auth.uid; }
+
+    // ---- staff roster: readable by the owner only; managed in console ----
+    match /staff/{uid} {
+      allow read: if signedIn() && request.auth.uid == uid;
+      allow write: if false; // create/manage in Firebase console only
+    }
+
+    // ---- sessions: everyone signed in can read; only staff control ----
+    match /sessions/{sessionId} {
+      allow read: if signedIn();
+      allow create: if isStaff() && request.resource.data.hostUid == request.auth.uid;
+      allow update, delete: if isStaff() &&
+        (resource.data.hostUid == request.auth.uid || isAdmin());
+    }
+
+    // ---- players ----
+    match /users/{docId} {
+      // owner reads own doc; staff read all (dashboard / analytics / leaderboard)
+      allow read: if isStaff() || ownsExisting();
+
+      // student creates own player doc: XP/badges empty, docId must match
+      // sessionId_playerId, and only the known fields are allowed (no junk).
+      allow create: if signedIn()
+        && request.resource.data.authUid == request.auth.uid
+        && request.resource.data.xp == 0
+        && request.resource.data.badges.size() == 0
+        && request.resource.data.sessionId is string
+        && request.resource.data.playerId is string
+        && request.resource.data.nickname is string
+        && docId == request.resource.data.sessionId + '_' + request.resource.data.playerId
+        && request.resource.data.keys().hasOnly([
+             'sessionId','playerId','nickname','room','authUid',
+             'xp','level','progress','missionScores','badges','joinedAt','lastSeen']);
+
+      // student may change ONLY lastSeen (presence). staff may write anything.
+      allow update: if isStaff() || (
+        ownsExisting()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['lastSeen'])
+      );
+
+      allow delete: if isStaff();
+    }
+
+    // ---- answers: write-once by the owner; only known fields ----
+    match /answers/{answerId} {
+      allow read: if isStaff();
+      allow create: if signedIn()
+        && request.resource.data.authUid == request.auth.uid
+        && answerId == request.resource.data.sessionId + '_' +
+             request.resource.data.playerId + '_' + request.resource.data.questionId
+        && request.resource.data.keys().hasOnly([
+             'sessionId','playerId','questionId','missionId',
+             'choice','isCorrect','responseMs','authUid','submittedAt']);
+      allow update, delete: if false; // immutable
+    }
+
+    // ---- leaderboards: read by anyone signed in; written by staff only ----
+    match /leaderboards/{sessionId} {
+      allow read: if signedIn();
+      allow write: if isStaff();
+    }
+
+    // ---- settings: read-only content/config; admin writes ----
+    match /settings/{docId} {
+      allow read: if signedIn();
+      allow write: if isAdmin();
+    }
+  }
+}
