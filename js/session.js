@@ -262,6 +262,16 @@ export async function getSessionAnswers(sessionId) {
   const snap = await getDocs(query(collection(db, COLL.answers), where('sessionId', '==', sessionId)));
   return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
 }
+/** ADMIN: save editable content to Firestore (settings/{name}) so edits go
+    live instantly without re-uploading files. Read by content.js. */
+export function saveSettings(name, data) {
+  return setDoc(doc(db, COLL.settings, name), { data, updatedAt: serverTimestamp() });
+}
+export async function getSettings(name) {
+  const snap = await getDoc(doc(db, COLL.settings, name));
+  return snap.exists() ? snap.data().data : null;
+}
+
 export function setSessionStatus(sessionId, status) {
   return updateDoc(doc(db, COLL.sessions, sessionId), { status, updatedAt: serverTimestamp() });
 }

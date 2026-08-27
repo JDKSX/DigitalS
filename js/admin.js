@@ -4,7 +4,7 @@
    Read-only content overview (content is edited in data/*.json).
    ================================================================= */
 import { onAuth, signInStaff, getRole, authErrorTh } from './auth.js';
-import { getSessions, getSessionUsers, getSessionAnswers, setSessionStatus, archiveSession } from './session.js';
+import { getSessions, getSessionUsers, getSessionAnswers, setSessionStatus, archiveSession, saveSettings } from './session.js';
 import { loadContent, loadQuestions } from './content.js';
 import { computeAnalytics } from './analytics.js';
 import { exportCSV, exportXLSX, download } from './export.js';
@@ -147,60 +147,152 @@ function renderContent() {
       <span class="ds-feat" style="width:40px;height:40px">${icon(m.icon || 'shield')}</span>
       <div><div style="font-family:var(--font-display);font-weight:700">${m.titleTh}</div><div class="ds-muted" style="font-size:.8rem">${m.title} · ${m.topicTh}</div></div>
       <span class="ds-chip">${n} ข้อ · ${m.type}</span></div>`; }).join('')}</div></div>
-    <div class="ds-card" style="margin-top:16px">
-      <div class="ds-heading"><span class="ds-en">Editor · แก้ไข/เพิ่ม/ลบ</span><h2>แก้ไขเนื้อหา</h2></div>
-      <div class="ed-tabs">
-        <button class="ed-tab is-active" data-file="questions" type="button">questions.json · คำถาม</button>
-        <button class="ed-tab" data-file="missions" type="button">missions.json · ภารกิจ</button>
-      </div>
-      <textarea id="edArea" class="ed-area" spellcheck="false" placeholder="กำลังโหลด…"></textarea>
-      <div id="edMsg" class="ed-msg"></div>
-      <div class="ds-row" style="gap:10px;margin-top:12px;flex-wrap:wrap">
-        <button class="ds-btn ds-btn--ghost" id="edValidate" type="button">${icon('search')} ตรวจสอบ JSON</button>
-        <button class="ds-btn ds-btn--primary" id="edDownload" type="button">${icon('reveal')} ดาวน์โหลดไฟล์</button>
-      </div>
-      <p class="ds-muted" style="font-size:.85rem;margin-top:10px">แก้ไข → <b>ตรวจสอบ</b> → <b>ดาวน์โหลด</b> → อัปโหลดทับในโฟลเดอร์ <span class="ds-mono">data/</span> บน GitHub → เว็บอัปเดตอัตโนมัติ · เพิ่มคำถาม = ก๊อปทั้งบล็อกแล้วเปลี่ยน id เป็น <span class="ds-mono">m1_q4</span></p>
-    </div>`;
+    <div id="qEditor"></div>`;
   hydrateIcons(box);
-  initEditor();
+  buildQEditor();
 }
 function countQ(mid) { let n = 0; while (state.questions[`${mid}_q${n + 1}`]) n++; return n; }
 
-/* ---------------- content editor (edit / add / remove, download JSON) ---------------- */
-const edRaw = { questions: null, missions: null };
-let edCurrent = 'questions';
-async function initEditor() {
-  const area = $('#edArea'), msg = $('#edMsg');
-  const load = async (file) => {
-    if (edRaw[file] == null) {
-      try { edRaw[file] = await (await fetch(`data/${file}.json?ts=${Date.now()}`)).text(); }
-      catch (_e) { edRaw[file] = JSON.stringify(file === 'questions' ? { questions: state.questions } : state.content, null, 2); }
-    }
-    area.value = edRaw[file]; msg.textContent = ''; msg.className = 'ed-msg';
-  };
-  await load(edCurrent);
-  document.querySelectorAll('.ed-tab').forEach((t) => t.addEventListener('click', async () => {
-    document.querySelectorAll('.ed-tab').forEach((x) => x.classList.remove('is-active'));
-    t.classList.add('is-active'); edCurrent = t.dataset.file; await load(edCurrent);
-  }));
-  area.addEventListener('input', () => { edRaw[edCurrent] = area.value; }); // keep edits across tab switches
-  $('#edValidate').addEventListener('click', () => validateJson(false));
-  $('#edDownload').addEventListener('click', () => { if (validateJson(true)) download(`${edCurrent}.json`, area.value, 'application/json'); });
-}
-function validateJson(silentOk) {
-  const area = $('#edArea'), msg = $('#edMsg');
-  try {
-    const obj = JSON.parse(area.value);
-    let info = 'JSON ถูกต้อง ✓';
-    if (edCurrent === 'questions' && obj.questions) info += ` · ${Object.keys(obj.questions).length} คำถาม`;
-    if (edCurrent === 'missions' && obj.missions) info += ` · ${obj.missions.length} ภารกิจ`;
-    msg.textContent = info; msg.className = 'ed-msg is-ok';
-    return true;
-  } catch (e) {
-    msg.textContent = 'JSON ผิดพลาด: ' + e.message; msg.className = 'ed-msg is-err';
-    if (!silentOk) area.focus();
-    return false;
+/* ---------------- visual question editor (forms — no JSON) ---------------- */
+let qFull = null;   // full parsed questions.json (keeps meta)
+let qmodel = null;  // qFull.questions — the editable map
+let qMission = 'm1';
+const escA = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const escT = (s) => String(s == null ? '' : s).replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+function setPath(o, path, val) { const ks = path.split('.'); let c = o; for (let i = 0; i < ks.length - 1; i++) c = c[ks[i]]; c[ks[ks.length - 1]] = val; }
+function missionType(mid) { const m = (state.content.missions || []).find((x) => x.id === mid); return m ? m.type : 'scenario'; }
+function qidsFor(mid) { const ids = []; let n = 1; while (qmodel[`${mid}_q${n}`]) { ids.push(`${mid}_q${n}`); n++; } return ids; }
+
+async function buildQEditor() {
+  const box = $('#qEditor'); if (!box) return;
+  if (!qFull) {
+    try { qFull = JSON.parse(await (await fetch(`data/questions.json?ts=${Date.now()}`)).text()); }
+    catch (_e) { qFull = { meta: {}, questions: JSON.parse(JSON.stringify(state.questions || {})) }; }
+    qmodel = qFull.questions;
   }
+  const missions = state.content.missions || [];
+  box.innerHTML = `<div class="ds-card">
+    <div class="ds-heading"><span class="ds-en">Editor · ฟอร์ม</span><h2>แก้ไขคำถาม (กรอกช่องได้เลย)</h2></div>
+    <label class="qf-label">เลือกภารกิจที่จะแก้</label>
+    <select id="qMissionSel" class="ds-input">${missions.map((m) => `<option value="${m.id}" ${m.id === qMission ? 'selected' : ''}>${m.id === 'boss' ? 'บอส' : 'ภารกิจ ' + m.no} · ${escA(m.titleTh)} (${m.type})</option>`).join('')}</select>
+    <div id="qList" style="margin-top:16px"></div>
+    <button class="ds-btn ds-btn--ghost ds-btn--block" id="qAdd" style="margin-top:12px">+ เพิ่มคำถามในภารกิจนี้</button>
+    <div class="ds-row" style="gap:10px;margin-top:20px;flex-wrap:wrap">
+      <button class="ds-btn ds-btn--primary" id="qSave">${icon('reveal')} บันทึก (ใช้ได้ทันที)</button>
+      <button class="ds-btn ds-btn--ghost" id="qBackup">ดาวน์โหลดสำรอง</button>
+    </div>
+    <div id="qMsg" class="ed-msg" style="margin-top:10px"></div>
+    <p class="ds-muted" style="font-size:.85rem;margin-top:6px">แก้ในฟอร์ม → กด <b>บันทึก</b> → เนื้อหาอัปเดต<b>ทันที</b> นักเรียน/วิทยากรเห็นเมื่อเข้าหรือโหลดหน้าใหม่ (ไม่ต้องอัปโหลด GitHub) · “ดาวน์โหลดสำรอง” ไว้เก็บไฟล์ต้นฉบับเฉยๆ</p>
+  </div>`;
+  hydrateIcons(box);
+  $('#qMissionSel').addEventListener('change', (e) => { qMission = e.target.value; renderQList(); });
+  $('#qAdd').addEventListener('click', addQuestion);
+  $('#qSave').addEventListener('click', saveQuestions);
+  $('#qBackup').addEventListener('click', () => { qFull.questions = qmodel; download('questions.json', JSON.stringify(qFull, null, 2), 'application/json'); });
+  const list = $('#qList');
+  list.addEventListener('input', onField);
+  list.addEventListener('change', onField);
+  list.addEventListener('click', onListClick);
+  renderQList();
+}
+
+function onField(e) {
+  const el = e.target; const qid = el.dataset.qid, path = el.dataset.path;
+  if (!qid || path == null || !qmodel[qid]) return;
+  let v = el.value; if (el.dataset.num) v = Number(v) || 0;
+  setPath(qmodel[qid], path, v);
+}
+function onListClick(e) {
+  const add = e.target.closest('[data-addopt]'); const del = e.target.closest('[data-delopt]'); const dq = e.target.closest('[data-delq]');
+  if (add) { const q = qmodel[add.dataset.addopt]; const used = (q.options || []).map((o) => o.key); const key = 'ABCDEFGH'.split('').find((k) => !used.includes(k)) || String(used.length + 1); q.options.push({ key, text: '' }); renderQList(); }
+  else if (del) { const [qid, i] = del.dataset.delopt.split(':'); const q = qmodel[qid]; const removed = q.options[+i]; q.options.splice(+i, 1); if (q.correct === removed.key) q.correct = (q.options[0] || {}).key || ''; renderQList(); }
+  else if (dq) { if (confirm('ลบคำถามนี้?')) { renumberDelete(dq.dataset.delq); renderQList(); } }
+}
+
+function renderQList() {
+  const list = $('#qList'); const ids = qidsFor(qMission);
+  list.innerHTML = ids.length ? ids.map((id, i) => questionCard(id, i)).join('') : '<p class="ds-muted ds-center" style="padding:14px 0">ยังไม่มีคำถาม — กด “เพิ่มคำถาม” ด้านล่าง</p>';
+}
+function questionCard(id, i) {
+  const q = qmodel[id];
+  const forms = { scenario: scenarioForm, investigation: investigationForm, dragsort: dragsortForm, ordering: orderingForm, assessment: assessmentForm };
+  const body = (forms[q.type] || scenarioForm)(id, q);
+  return `<div class="qcard"><div class="qc-head"><b>ข้อ ${i + 1}</b> <span class="ds-chip">${q.type}</span>
+    <button class="qc-del" data-delq="${id}" type="button">🗑 ลบข้อนี้</button></div>${body}</div>`;
+}
+const lbl = (t) => `<label class="qf-label">${t}</label>`;
+const area = (id, path, v) => `<textarea class="qf-area" data-qid="${id}" data-path="${path}">${escT(v)}</textarea>`;
+const inp = (id, path, v, extra = '') => `<input class="qf-in" data-qid="${id}" data-path="${path}" value="${escA(v)}" ${extra}>`;
+
+function scenarioForm(id, q) {
+  return `${lbl('สถานการณ์ / คำถาม')}${area(id, 'situation', q.situation)}
+    ${lbl('ตัวเลือก — วงกลมหน้าข้อ = คำตอบที่ถูก')}
+    <div class="qf-opts">${(q.options || []).map((o, i) => `<div class="qf-opt">
+      <input type="radio" name="c-${id}" value="${escA(o.key)}" data-qid="${id}" data-path="correct" ${q.correct === o.key ? 'checked' : ''} title="ตั้งเป็นข้อที่ถูก">
+      <span class="qf-key">${escA(o.key)}</span>${inp(id, `options.${i}.text`, o.text)}
+      <button class="qf-x" data-delopt="${id}:${i}" type="button" title="ลบ">✕</button></div>`).join('')}</div>
+    <button class="qf-addbtn" data-addopt="${id}" type="button">+ เพิ่มตัวเลือก</button>
+    ${lbl('คำอธิบายเฉลย')}${area(id, 'explanation', q.explanation)}
+    ${lbl('คะแนน XP')}<input class="qf-in qf-num" type="number" data-qid="${id}" data-path="xp" data-num="1" value="${q.xp || 100}">`;
+}
+function investigationForm(id, q) {
+  return `${lbl('พาดหัวข่าว')}${inp(id, 'headline', q.headline)}
+    <div class="qf-row2"><div>${lbl('แหล่งที่มา')}${inp(id, 'source', q.source)}</div><div>${lbl('วันที่ / ยอดแชร์')}${inp(id, 'date', q.date)}</div></div>
+    ${lbl('คำพูดอ้าง')}${inp(id, 'quote', q.quote)}
+    ${lbl('หลักฐาน (แตะดูได้ในเกม)')}${(q.evidence || []).map((e, i) => `<div class="qf-opt"><span class="qf-key" style="min-width:74px">${escA(e.label || 'หลักฐาน ' + (i + 1))}</span>${inp(id, `evidence.${i}.text`, e.text)}</div>`).join('')}
+    ${lbl('คำถาม')}${inp(id, 'question', q.question)}
+    ${lbl('คำตอบที่ถูก')}<div class="qf-opts">${(q.options || []).map((o) => `<label class="qf-opt qf-radio"><input type="radio" name="c-${id}" value="${escA(o.key)}" data-qid="${id}" data-path="correct" ${q.correct === o.key ? 'checked' : ''}> ${escA(o.text)}</label>`).join('')}</div>
+    ${lbl('คำอธิบายเฉลย')}${area(id, 'explanation', q.explanation)}`;
+}
+function dragsortForm(id, q) {
+  const buckets = q.buckets || [];
+  return `${lbl('คำสั่ง')}${area(id, 'prompt', q.prompt)}
+    ${lbl('การ์ด — เลือกกล่องที่ถูกต้อง')}${(q.cards || []).map((c, i) => `<div class="qf-opt">${inp(id, `cards.${i}.text`, c.text)}<select class="qf-sel" data-qid="${id}" data-path="cards.${i}.correct">${buckets.map((b) => `<option value="${escA(b.key)}" ${c.correct === b.key ? 'selected' : ''}>${escA(b.labelTh || b.label || b.key)}</option>`).join('')}</select></div>`).join('')}
+    ${lbl('คำอธิบายเฉลย')}${area(id, 'explanation', q.explanation)}`;
+}
+function orderingForm(id, q) {
+  return `${lbl('สถานการณ์')}${area(id, 'scenario', q.scenario)}
+    ${lbl('ขั้นตอน (บนลงล่าง = ลำดับที่ถูก)')}${(q.correctOrder || []).map((sid, idx) => { const si = (q.steps || []).findIndex((s) => s.id === sid); const st = (q.steps || [])[si]; return `<div class="qf-opt"><span class="qf-key">${idx + 1}</span>${inp(id, `steps.${si}.text`, st ? st.text : '')}</div>`; }).join('')}
+    ${lbl('คำอธิบายเฉลย')}${area(id, 'explanation', q.explanation)}`;
+}
+function assessmentForm(id, q) {
+  const dims = q.dimensions || {}; const keys = Object.keys(dims);
+  return `${lbl('คำนำ')}${area(id, 'prompt', q.prompt)}
+    ${lbl('ข้อความประเมิน (เลือกด้าน)')}${(q.statements || []).map((s, i) => `<div class="qf-opt">${inp(id, `statements.${i}.text`, s.text)}<select class="qf-sel" data-qid="${id}" data-path="statements.${i}.dimension">${keys.map((k) => `<option value="${k}" ${s.dimension === k ? 'selected' : ''}>${escA(dims[k])}</option>`).join('')}</select></div>`).join('')}
+    ${lbl('คำอธิบาย')}${area(id, 'explanation', q.explanation)}`;
+}
+
+function addQuestion() {
+  const n = qidsFor(qMission).length + 1; const id = `${qMission}_q${n}`; const t = missionType(qMission);
+  const tpl = {
+    scenario: { situation: '', options: [{ key: 'A', text: '' }, { key: 'B', text: '' }, { key: 'C', text: '' }], correct: 'A', explanation: '', xp: 100 },
+    investigation: { headline: '', source: '', date: '', quote: '', evidence: [{ label: 'หลักฐาน A', text: '' }], question: 'ข่าวนี้น่าเชื่อถือหรือไม่?', options: [{ key: 'TRUE', text: 'จริง' }, { key: 'FALSE', text: 'ปลอม' }, { key: 'UNSURE', text: 'หลักฐานไม่พอ' }], correct: 'FALSE', explanation: '', xp: 150 },
+    dragsort: { prompt: '', buckets: [{ key: 'a', label: 'A', labelTh: 'กลุ่ม A' }, { key: 'b', label: 'B', labelTh: 'กลุ่ม B' }], cards: [{ id: 'c1', text: '', correct: 'a' }], explanation: '', xp: 150 },
+    ordering: { scenario: '', steps: [{ id: 's1', text: '' }, { id: 's2', text: '' }], correctOrder: ['s1', 's2'], explanation: '', xp: 300 },
+    assessment: { prompt: '', scale: [{ v: 0, label: 'ไม่เคย' }, { v: 1, label: 'บางครั้ง' }, { v: 2, label: 'บ่อย' }, { v: 3, label: 'เกือบทุกวัน' }], dimensions: { focus: 'สมาธิ', wellbeing: 'สุขภาวะ' }, statements: [{ id: 's1', text: '', dimension: 'focus' }], explanation: '', xp: 200 },
+  }[t] || {};
+  qmodel[id] = { id, missionId: qMission, type: t, ...tpl };
+  renderQList();
+  const list = $('#qList'); list.lastElementChild && list.lastElementChild.scrollIntoView({ block: 'center' });
+}
+function renumberDelete(delId) {
+  // delete then re-number the mission's questions so ids stay m_q1..N (no gaps)
+  const ids = qidsFor(qMission); delete qmodel[delId];
+  const remaining = ids.filter((x) => x !== delId).map((x) => qmodel[x]);
+  ids.forEach((x) => delete qmodel[x]);
+  remaining.forEach((q, i) => { const nid = `${qMission}_q${i + 1}`; q.id = nid; qmodel[nid] = q; });
+}
+async function saveQuestions() {
+  const msg = $('#qMsg'), btn = $('#qSave');
+  qFull.questions = qmodel;
+  const oldHtml = btn.innerHTML; btn.disabled = true; btn.textContent = 'กำลังบันทึก…';
+  try {
+    await saveSettings('questions', qmodel); // → Firestore, live immediately
+    msg.textContent = `บันทึกสำเร็จ ✓ ${Object.keys(qmodel).length} คำถาม — ใช้ได้ทันที (นักเรียนเห็นเมื่อเข้า/โหลดหน้าใหม่)`; msg.className = 'ed-msg is-ok';
+  } catch (e) {
+    msg.textContent = 'บันทึกไม่สำเร็จ: ' + (e.code || e.message) + ' — ต้องล็อกอินเป็นผู้ดูแล (role admin)'; msg.className = 'ed-msg is-err';
+  }
+  btn.disabled = false; btn.innerHTML = oldHtml;
 }
 
 /* ---------------- shared ---------------- */
