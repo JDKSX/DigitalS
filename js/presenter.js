@@ -344,7 +344,9 @@ function startTimer(s) {
   const start = typeof s.questionStartAt === 'number' ? s.questionStartAt
     : (s.questionStartAt && s.questionStartAt.toMillis ? s.questionStartAt.toMillis() : Date.now());
   const dur = (s.questionDuration || 30) * 1000;
-  lastTickLeft = null;
+  // NOTE: do NOT reset lastTickLeft here — startTimer is re-called on every stats
+  // re-render (answered count); resetting would replay countdown beeps within the
+  // same second. It resets naturally when the question changes (new left value).
   const tick = () => {
     const left = Math.max(0, Math.ceil((start + dur - Date.now()) / 1000));
     const el = $('#presTimer');

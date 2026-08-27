@@ -413,14 +413,6 @@ function pushStats(patch) {
   if (Object.keys(diff).length) { Object.assign(lastStats, diff); updateStats(state.sid, diff).catch(() => {}); }
 }
 
-/** Write to the session only when a value actually changed (saves writes §26). */
-function maybePush(patch) {
-  const s = state.session; if (!s) return;
-  const diff = {};
-  Object.keys(patch).forEach((k) => { if (s[k] !== patch[k]) diff[k] = patch[k]; });
-  if (Object.keys(diff).length) updateSession(state.sid, diff).catch(() => {});
-}
-
 function watchAnswers(s) {
   const qid = s.currentQuestion;
   if (qid === answersQid) return;
