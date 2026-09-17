@@ -1,168 +1,231 @@
-<title>Digital Survival Playbook</title>
-<style>
-@import url('https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=Noto+Sans+Thai:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap');
-:root{
-  --bg-900:#070E1C;--bg-800:#0C1626;--bg-700:#122135;--bg-600:#1A2E48;--bg-500:#24405F;
-  --line:rgba(120,160,210,.16);--line-strong:rgba(120,160,210,.30);
-  --text:#EAF2FF;--text-muted:#93A7C6;--text-dim:#607A9C;
-  --electric:#2E7DFF;--cyan:#22D3EE;--violet:#A78BFA;--xp:#FFC24B;--success:#34D399;--danger:#FB6B6B;--warning:#FBBF24;
-  --card:linear-gradient(180deg,rgba(26,46,72,.55),rgba(18,33,53,.9));
-  --g1:rgba(46,125,255,.14);--g2:rgba(34,211,238,.10);
-  --fd:'Sora','Noto Sans Thai',sans-serif;--fb:'Noto Sans Thai',sans-serif;--fm:'JetBrains Mono',monospace;
-  color-scheme:dark;
-}
-:root[data-theme="light"]{
-  --bg-900:#EEF3FB;--bg-800:#E7EEF8;--bg-700:#FFFFFF;--bg-600:#F2F6FC;--bg-500:#E3EBF6;
-  --line:rgba(30,64,120,.14);--line-strong:rgba(30,64,120,.26);
-  --text:#0B1B33;--text-muted:#47607F;--text-dim:#8397B3;
-  --card:linear-gradient(180deg,#FFF,#F6F9FE);--g1:rgba(46,125,255,.10);--g2:rgba(124,92,240,.08);
-  color-scheme:light;
-}
-*{box-sizing:border-box}
-body{margin:0;min-height:100dvh;font-family:var(--fb);color:var(--text);line-height:1.6;
-  background:radial-gradient(1200px 600px at 85% -10%,var(--g1),transparent 60%),radial-gradient(900px 500px at -10% 110%,var(--g2),transparent 55%),var(--bg-900);
-  -webkit-font-smoothing:antialiased}
-.wrap{max-width:820px;margin:0 auto;padding:30px 22px 80px}
-h1,h2,h3{font-family:var(--fd);margin:0;line-height:1.15;text-wrap:balance}
-.eyebrow{font-family:var(--fm);font-size:.72rem;letter-spacing:.18em;text-transform:uppercase;color:var(--cyan);font-weight:700}
-.top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
-.toggle{width:44px;height:44px;border-radius:999px;display:grid;place-items:center;cursor:pointer;background:var(--bg-600);border:1px solid var(--line-strong);color:var(--text);font-size:1.1rem}
-.lead{color:var(--text-muted);max-width:60ch;margin-top:10px}
-.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:22px;margin-top:18px;box-shadow:0 8px 24px rgba(0,0,0,.28)}
-h2.sec{font-size:1.35rem;margin:38px 0 2px;display:flex;align-items:center;gap:10px}
-h2.sec .num{font-family:var(--fm);font-size:.9rem;color:var(--bg-900);background:var(--cyan);width:30px;height:30px;border-radius:9px;display:grid;place-items:center;flex:none}
-:root[data-theme="light"] h2.sec .num{color:#fff;background:var(--electric)}
-.sub{color:var(--text-muted);margin:2px 0 0 40px;font-size:.92rem}
-ol.steps{counter-reset:s;list-style:none;padding:0;margin:6px 0 0}
-ol.steps li{position:relative;padding:12px 0 12px 44px;border-bottom:1px solid var(--line)}
-ol.steps li:last-child{border-bottom:0}
-ol.steps li::before{counter-increment:s;content:counter(s);position:absolute;left:0;top:12px;width:28px;height:28px;border-radius:8px;background:var(--bg-600);border:1px solid var(--line);display:grid;place-items:center;font-family:var(--fm);font-weight:700;color:var(--cyan);font-size:.85rem}
-.k{font-family:var(--fm);font-size:.82rem;background:var(--bg-600);border:1px solid var(--line);border-radius:6px;padding:2px 7px;color:var(--text)}
-.pill{display:inline-flex;align-items:center;gap:6px;font-family:var(--fm);font-size:.72rem;font-weight:700;padding:4px 10px;border-radius:999px;background:var(--bg-600);border:1px solid var(--line);color:var(--text-muted)}
-.btnref{display:flex;gap:12px;align-items:flex-start;padding:12px 0;border-bottom:1px solid var(--line)}
-.btnref:last-child{border-bottom:0}
-.btnref b{min-width:120px;font-family:var(--fd)}
-.grid2{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
-@media(max-width:600px){.grid2{grid-template-columns:1fr}.btnref b{min-width:0}}
-.role{padding:14px;border-radius:12px;background:var(--bg-700);border:1px solid var(--line)}
-.role h4{font-family:var(--fd);margin:0 0 4px}
-.role code{font-family:var(--fm);font-size:.8rem;color:var(--cyan);word-break:break-all}
-.tip{display:flex;gap:12px;padding:12px 0;border-bottom:1px solid var(--line)}
-.tip:last-child{border-bottom:0}
-.tip .ic{flex:none;font-size:1.2rem}
-.warn{background:rgba(251,191,36,.1);border:1px solid rgba(251,191,36,.4);border-radius:12px;padding:14px 16px;margin-top:14px;font-size:.92rem}
-.ok{color:var(--success);font-weight:700}
-table{width:100%;border-collapse:collapse}
-td{padding:9px 6px;border-bottom:1px solid var(--line);font-size:.92rem;vertical-align:top}
-tr:last-child td{border-bottom:0}
-.toc{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}
-.toc a{font-size:.85rem;padding:6px 12px;border-radius:999px;background:var(--bg-700);border:1px solid var(--line);color:var(--text-muted);text-decoration:none}
-.toc a:hover{color:var(--text);border-color:var(--line-strong)}
-</style>
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>คู่มือครู · JDKS Arena</title>
+  <meta name="description" content="คู่มือใช้งาน JDKS Arena สำหรับครู — เปิดห้อง คุมเกม สร้างชุดคำถามของตัวเอง และเผยแพร่ให้ครูคนอื่น">
+  <meta name="theme-color" content="#7C3AED">
+  <script>try{document.documentElement.setAttribute('data-theme',localStorage.getItem('ds-theme')||'light')}catch(e){document.documentElement.setAttribute('data-theme','light')}</script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Kanit:wght@500;600;700&family=Sarabun:wght@400;600;700&family=JetBrains+Mono:wght@600;700&display=swap">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/arena.css">
+  <link rel="stylesheet" href="css/guide.css">
+</head>
+<body>
+  <div class="ds-gridbg" aria-hidden="true"></div>
 
-<div class="wrap">
-  <div class="top">
-    <div><p class="eyebrow">คู่มือวิทยากร · Facilitator Playbook</p>
-      <h1 style="font-size:clamp(1.9rem,5vw,2.8rem);margin-top:6px">🎓 DIGITAL SURVIVAL</h1>
-      <p class="lead">คู่มือใช้งานระบบสำหรับดำเนินกิจกรรมอบรม Digital Literacy · ~120 นักเรียน iPad · 2 ชั่วโมง</p></div>
-    <button class="toggle" id="tt" aria-label="สลับธีม">◐</button>
-  </div>
+  <header class="jx-top" data-topbar data-tag="คู่มือครู" data-active="guide"></header>
 
-  <div class="toc">
-    <a href="#roles">บทบาท 5 หน้า</a><a href="#prep">เตรียมก่อนงาน</a><a href="#run">วิธีรันวันจริง</a>
-    <a href="#buttons">อ้างอิงปุ่ม Host</a><a href="#tips">เคล็ดลับ</a><a href="#trouble">แก้ปัญหา</a><a href="#after">หลังจบ</a>
-  </div>
+  <main class="gd">
+    <!-- ── สารบัญ ── -->
+    <nav class="gd-toc" aria-label="สารบัญ">
+      <p class="gd-toc__h">สารบัญ</p>
+      <a href="#start"><span>1</span> เริ่มใน 5 นาที</a>
+      <a href="#screens"><span>2</span> สี่จอ ใครใช้อะไร</a>
+      <a href="#run"><span>3</span> คุมเกมทีละขั้น</a>
+      <a href="#buttons"><span>4</span> ปุ่มควบคุมทั้ง 5</a>
+      <a href="#build"><span>5</span> สร้างชุดคำถามเอง</a>
+      <a href="#share"><span>6</span> คลังเกมและการเผยแพร่</a>
+      <a href="#xp"><span>7</span> คะแนน XP ทำงานยังไง</a>
+      <a href="#room"><span>8</span> เตรียมห้องเรียนจริง</a>
+      <a href="#trouble"><span>9</span> แก้ปัญหาที่พบบ่อย</a>
+    </nav>
 
-  <h2 class="sec" id="roles"><span class="num">1</span> บทบาท 5 หน้า</h2>
-  <p class="sub">เปลี่ยน <code style="color:var(--cyan)">yoursite</code> เป็น URL จริงหลัง deploy</p>
-  <div class="card grid2">
-    <div class="role"><h4>👦 นักเรียน</h4><code>/index.html</code><p class="lead" style="margin-top:6px">แจก URL นี้ให้เด็ก · กรอกรหัสห้อง + ชื่อเล่น → เล่น</p></div>
-    <div class="role"><h4>🎤 วิทยากร (Host)</h4><code>/host.html</code><p class="lead" style="margin-top:6px">ล็อกอิน · เห็นคำถาม+เฉลย+คำอธิบาย · คุมเกม (เลือกเวลา/เริ่ม/ล็อก/เฉลย/ผลคะแนน/ถัดไป)</p></div>
-    <div class="role"><h4>📽️ จอฉาย (Presenter)</h4><code>/presenter.html?s=รหัส</code><p class="lead" style="margin-top:6px">ต่อ projector · คำถาม/เวลา/podium/เสียง</p></div>
-    <div class="role"><h4>🛠️ ผู้ดูแล (Admin)</h4><code>/admin.html</code><p class="lead" style="margin-top:6px">วิเคราะห์ผล · ส่งออก CSV/XLSX · จัดการเซสชัน</p></div>
-  </div>
+    <!-- ── เนื้อหา ── -->
+    <article class="gd-body">
+      <header class="gd-hero">
+        <span data-mascot="owl" data-size="120" class="mx-pop"></span>
+        <p class="jx-eyebrow">คู่มือครู</p>
+        <h1 class="gd-h1">เปิดห้องแรกของคุณ<br>ให้จบใน 5 นาที</h1>
+        <p class="jx-lead">JDKS Arena คือเกมตอบคำถามสดสำหรับห้องเรียน ครูคุมเกมจากเครื่องตัวเอง นักเรียนตอบจากมือถือ และทุกคนเห็นโจทย์เดียวกันบนจอหน้าห้อง</p>
+      </header>
 
-  <h2 class="sec" id="prep"><span class="num">2</span> เตรียมก่อนวันงาน</h2>
-  <div class="card">
-    <ol class="steps">
-      <li>Deploy ระบบขึ้น GitHub Pages แล้วจด <b>URL จริง</b></li>
-      <li>ตรวจ <span class="k">firebase-test.html</span> ให้เขียวครบ 3 ขั้น</li>
-      <li>เปิด <span class="k">host.html</span> ล็อกอินได้ · <span class="k">admin.html</span> ล็อกอินได้</li>
-      <li><b>ซ้อมด้วย DEMO Mode</b> — host กด "DEMO + 10 บอท" เล่นจบ 1 ภารกิจ ดู XP/leaderboard/เสียง/podium</li>
-      <li>ทดสอบบน <b>iPad จริง</b> 2–3 เครื่อง (Safari) · เช็กปุ่มใหญ่พอ แตะการ์ดได้</li>
-      <li>เตรียมสไลด์/กระดานเขียน <b>URL + รหัสห้อง</b> ให้เด็กเห็นชัด</li>
-      <li>เช็ก Wi-Fi โรงเรียนรับ ~120 เครื่องพร้อมกัน (ระบบมี offline fallback แล้ว)</li>
-    </ol>
-  </div>
+      <!-- 1 -->
+      <section class="gd-sec" id="start">
+        <h2><span class="gd-no">1</span> เริ่มใน 5 นาที</h2>
+        <div class="jx-card">
+          <ol class="gd-steps">
+            <li><b>สมัครบัญชีครู</b> — ใช้อีเมลอะไรก็ได้ ไม่ต้องยืนยันอีเมลก่อนใช้งาน <a href="login.html?mode=signup">สมัครที่นี่</a></li>
+            <li><b>หยิบชุดคำถาม</b> — กด “เริ่มจากชุดตัวอย่าง” ในแผงของฉัน จะได้เกมพร้อมเล่น 9 ภารกิจ 23 คำถามทันที (หรือเลือกของครูคนอื่นจาก <a href="community.html">คลังเกม</a>)</li>
+            <li><b>กด “เปิดห้อง”</b> บนการ์ดชุดนั้น → ได้ <b>รหัสห้อง 5 ตัว</b></li>
+            <li><b>ให้นักเรียนเข้า</b> — เปิดหน้าแรกของเว็บ กรอกรหัสห้อง + ชื่อเล่น ไม่ต้องสมัครอะไรเลย</li>
+            <li><b>กดปุ่ม “เริ่ม”</b> มุมซ้ายล่าง — ถ้ายังไม่ได้เลือกภารกิจ ระบบจะเริ่มภารกิจถัดไปที่ยังไม่ได้เล่นให้เอง</li>
+          </ol>
+          <p class="gd-note" data-icon-before="bulb">อยากลองก่อนโดยไม่เปิดห้องจริง? กด “ซ้อม + บอต 10 ตัว” ที่แผงคุมเกม ระบบจะสร้างผู้เล่นปลอมมาตอบให้ดูครบวงจร</p>
+        </div>
+      </section>
 
-  <h2 class="sec" id="run"><span class="num">3</span> วิธีรันวันจริง (ทีละขั้น)</h2>
-  <p class="sub">หัวใจของการดำเนินกิจกรรม — ทำตามนี้</p>
-  <div class="card">
-    <ol class="steps">
-      <li>เปิด <b>host.html</b> → ล็อกอิน → กด <b>"สร้างเซสชัน"</b> (ไม่ใช่ DEMO) → ได้ <b>รหัสห้อง</b></li>
-      <li>เปิด <b>presenter.html?s=รหัส</b> บนเครื่องต่อ projector → กด <span class="pill">🎵</span> <span class="pill">🔔</span> เปิดเสียง</li>
-      <li>เขียน <b>URL + รหัสห้อง</b> บนจอ/กระดาน → ให้เด็กเปิดหน้าแรก กรอกรหัส + ชื่อเล่น</li>
-      <li>ดูช่อง <b>"เข้าร่วม"</b> ที่ host ขึ้นครบ ~120 (จอฉายโชว์จำนวนผู้เล่น)</li>
-      <li><b>แตะการ์ดภารกิจ</b> (เช่น ภารกิจ 1) → อ่าน <b>บทเกริ่นนำ 🎤</b> ที่ขึ้นบนแผง → <b>เลือกเวลาต่อข้อ</b> (20–90 วิ หรือไม่จำกัด) → กด <span class="k">▶ เริ่ม</span></li>
-      <li>เด็กตอบตามเวลาที่ตั้ง (จอฉายนับถอยหลัง + เสียง tick) — บนแผงวิทยากรจะ<b>เห็นคำถาม + เฉลย + คำอธิบาย</b>ไว้บรรยาย → พอตอบครบ/หมดเวลา กด <span class="k">🔒 ล็อก</span></li>
-      <li>กด <span class="k">💡 เฉลย</span> และ <span class="k">📊 ผลคะแนน</span> — <b>ลำดับใดก็ได้</b> แต่ละปุ่มขึ้นพร้อมกัน<b>ทั้ง 3 จอ</b> (เฉลย=คำตอบถูก+คำอธิบาย · ผลคะแนน=แท่นคะแนน+คอนเฟตติ) → อภิปรายด้วยปาก</li>
-      <li>กด <span class="k">→ ถัดไป</span> ไปข้อ 2, 3 ... จนครบภารกิจ (แต่ละภารกิจ 2–3 ข้อ)</li>
-      <li>จบภารกิจ → การ์ดจะขึ้น <b>✓ เขียว</b> (เล่นแล้ว) → <b>แตะการ์ดภารกิจถัดไป</b> ทำซ้ำ (ข้าม/ย้อนกลับมาเล่นซ้ำได้)</li>
-      <li>ครบ 8 + Final Boss → กด <b>"🏆 ประกาศผลรวม"</b> → จอฉายขึ้น <b>อันดับคะแนนทุกคน</b> (แท่น 1-2-3 + รายชื่อตามลำดับ) + คอนเฟตติ · เด็กเห็นหน้า <b>Digital Survivor</b> (กด "จบกิจกรรม" ถ้าอยากปิดเงียบๆ ไม่ประกาศ)</li>
-    </ol>
-    <div class="warn">⏱️ <b>จัดเวลา 2 ชม. / 9 ด่าน ≈ 12–13 นาที/ภารกิจ</b> — ถ้าช้า ข้ามบางภารกิจได้ (แตะการ์ดไหนก็เริ่มได้) · เน้นให้เด็ก<b>คิด+อภิปราย</b>มากกว่าตอบเร็ว</div>
-  </div>
+      <!-- 2 -->
+      <section class="gd-sec" id="screens">
+        <h2><span class="gd-no">2</span> สี่จอ ใครใช้อะไร</h2>
+        <div class="gd-grid">
+          <div class="jx-card gd-role">
+            <span data-mascot="people" data-size="66" data-tone="teal"></span>
+            <h3>นักเรียน</h3><code>หน้าแรก → กรอกรหัส</code>
+            <p>เล่นบนมือถือหรือแท็บเล็ต เห็นบัตรผ่าน คะแนน และการ์ดคำตอบ 5 สี</p>
+          </div>
+          <div class="jx-card gd-role">
+            <span data-mascot="owl" data-size="66"></span>
+            <h3>ครู (แผงคุมเกม)</h3><code>host.html</code>
+            <p>เห็นคำถาม เฉลย และคำอธิบายไว้บรรยาย พร้อมตัวเลขสดและกราฟคำตอบ</p>
+          </div>
+          <div class="jx-card gd-role">
+            <span data-mascot="rocket" data-size="66"></span>
+            <h3>จอฉาย</h3><code>presenter.html?s=รหัส</code>
+            <p>ต่อโปรเจกเตอร์ ขึ้นโจทย์ เวลา การ์ดคำตอบ และแท่นอันดับ</p>
+          </div>
+          <div class="jx-card gd-role">
+            <span data-mascot="book" data-size="66" data-tone="gold"></span>
+            <h3>หน้าแก้ไขชุด</h3><code>editor.html</code>
+            <p>สร้าง/แก้ภารกิจและคำถามทั้ง 5 รูปแบบ เพิ่มคำถามได้ในการ์ดภารกิจเลย</p>
+          </div>
+        </div>
+        <p class="gd-note" data-icon-before="monitor">จอฉายเปิดจากปุ่ม <b>จอฉาย</b> บนแถบบนของแผงคุมเกม — ลิงก์จะพ่วงรหัสห้องมาให้อัตโนมัติ ไม่ต้องพิมพ์เอง</p>
+      </section>
 
-  <h2 class="sec" id="buttons"><span class="num">4</span> อ้างอิงปุ่มควบคุม Host</h2>
-  <div class="card">
-    <div class="btnref"><b>⏱ เลือกเวลา</b><span>ตั้งเวลาตอบต่อข้อก่อนกด "เริ่ม" — <span class="k">20/30/45/60/90 วิ</span> หรือ <span class="k">ไม่จำกัด</span> (∞ = ไม่นับถอยหลัง/ไม่ล็อกอัตโนมัติ กดล็อกเอง)</span></div>
-    <div class="btnref"><b>▶ เริ่ม</b><span>เปิดคำถาม → เด็กเห็นตัวเลือก + timer เริ่มนับตามเวลาที่ตั้ง</span></div>
-    <div class="btnref"><b>🔒 ล็อก</b><span>ปิดรับคำตอบ (กันตอบเพิ่ม) — กดเมื่อตอบครบหรือหมดเวลา</span></div>
-    <div class="btnref"><b>💡 เฉลย</b><span><b>อิสระ</b> — โชว์คำตอบถูก + คำอธิบาย ทั้ง 3 จอ · กดซ้ำเพื่อซ่อนได้</span></div>
-    <div class="btnref"><b>📊 ผลคะแนน</b><span><b>อิสระ</b> — คิด XP + ขึ้นแท่นคะแนน/อันดับ ทั้ง 3 จอ · กดก่อนหรือหลังเฉลยก็ได้</span></div>
-    <div class="btnref"><b>→ ถัดไป</b><span>ไปคำถามข้อถัดไปของภารกิจนั้น</span></div>
-    <div class="btnref"><b>🏆 ประกาศผลรวม</b><span>ปิดห้อง + ขึ้น <b>อันดับคะแนนทุกคน</b>บนจอฉาย (แท่น 1-2-3 + รายชื่อตามลำดับ + คอนเฟตติ) — ใช้ตอนจบเพื่อประกาศผู้ชนะ</span></div>
-    <div class="btnref"><b>🏆 จบกิจกรรม</b><span>ปิดห้องเงียบๆ (ไม่ประกาศผล) → เด็กเห็นหน้าสรุป Digital Survivor</span></div>
-    <div class="btnref"><b>✨ เซสชันใหม่</b><span>เริ่มห้องใหม่ (เซสชันเก่าดูย้อนหลังได้ที่ Admin)</span></div>
-  </div>
-  <p class="sub" style="margin-left:0">ปุ่มที่กำลังโชว์บนจอจะมี<b>ขอบเขียว</b> + แผงขึ้นป้าย "✓ เฉลยขึ้นทุกจอแล้ว / 🏆 ผลคะแนนขึ้นทุกจอแล้ว" — ระบบเปิดเฉพาะปุ่มที่ใช้ได้ในสถานะนั้น</p>
+      <!-- 3 -->
+      <section class="gd-sec" id="run">
+        <h2><span class="gd-no">3</span> คุมเกมทีละขั้น</h2>
+        <div class="jx-card">
+          <ol class="gd-steps">
+            <li><b>เลือกภารกิจ</b> จากรางด้านซ้าย — ภารกิจที่เล่นจบแล้วจะมีติ๊กเขียว ระบบข้ามให้เอง</li>
+            <li><b>อ่านบทเกริ่นนำ</b> ที่ขึ้นในกรอบสีเหลือง (เห็นเฉพาะครู) แล้ว<b>เลือกเวลาต่อข้อ</b> 20–90 วินาที หรือไม่จำกัด</li>
+            <li>กด <b>เริ่ม</b> — โจทย์ขึ้นพร้อมกันทุกจอ นักเรียนเริ่มตอบ</li>
+            <li>ดูตัวเลข <b>ตอบแล้ว</b> กับกราฟคำตอบทางขวา พอครบหรือหมดเวลา กด <b>ล็อก</b></li>
+            <li>กด <b>เฉลย</b> และ <b>ผลคะแนน</b> — กดลำดับไหนก่อนก็ได้ และกดสลับเปิด/ปิดได้ แต่ละปุ่มขึ้นพร้อมกันทั้งสามจอ</li>
+            <li>อภิปรายด้วยปาก แล้วกด <b>ถัดไป</b> จนครบภารกิจ</li>
+            <li>จบกิจกรรม → กด <b>จบกิจกรรม</b> จากเมนูมุมขวาบน</li>
+          </ol>
+          <p class="gd-note gd-note--warn" data-icon-before="alert">กด <b>จบกิจกรรม</b> แล้วห้องจะปิดถาวรและระบบ<b>ออกรหัสใหม่ให้อัตโนมัติ</b> รหัสเดิมใช้ไม่ได้อีก (รหัสห้องใช้ได้ครั้งเดียวเสมอ) ถ้าอยากประกาศอันดับทีละขั้นบนจอฉาย ให้กด <b>ประกาศผลรวม</b> ก่อน แล้วค่อยจบกิจกรรม</p>
+        </div>
+      </section>
 
-  <h2 class="sec" id="tips"><span class="num">5</span> เคล็ดลับการดำเนินกิจกรรม</h2>
-  <div class="card">
-    <div class="tip"><span class="ic">🗣️</span><div><b>เกริ่นก่อนกดเริ่ม</b> — อ่าน <b>บทเกริ่นนำ 🎤</b> ที่ระบบขึ้นให้บนแผง แล้วค่อยกด ▶ เริ่ม</div></div>
-    <div class="tip"><span class="ic">⏱️</span><div><b>ตั้งเวลาให้เหมาะกับข้อ</b> — ข้อที่ต้องอ่านเยอะ/คิดวิเคราะห์ ตั้ง <b>60–90 วิ หรือไม่จำกัด</b> · ข้อง่ายๆ ใช้ 20–30 วิ (30 วิมักเร็วเกินสำหรับข้อยาว)</div></div>
-    <div class="tip"><span class="ic">👀</span><div><b>วิทยากรเห็นเฉลยบนแผงเสมอ</b> — คำตอบถูก (ติ๊ก ✓) + คำอธิบาย โชว์ให้คุณอ่านนำ ไม่ต้องจำเอง · เด็กจะเห็นก็ต่อเมื่อคุณกด 💡 เฉลย</div></div>
-    <div class="tip"><span class="ic">🤔</span><div><b>หลังเฉลย เปิดวงอภิปราย</b> — "ทำไมข้อนี้ดีกว่า?" สำคัญกว่าตัวคะแนน (แนวคิดหลัก: ไม่มีถูก-ผิดตายตัว)</div></div>
-    <div class="tip"><span class="ic">🏆</span><div><b>ใช้ leaderboard สร้างความสนุก</b> แต่ย้ำว่าคะแนนมาจาก<b>คุณภาพการคิด</b> ไม่ใช่ความเร็ว</div></div>
-    <div class="tip"><span class="ic">⚖️</span><div><b>ภารกิจ 8 (สุขภาวะ)</b> เป็นการสะท้อนตนเอง ไม่มีถูก-ผิด — ย้ำว่าเป็น <i>Habit Profile</i> ไม่ใช่การวินิจฉัย</div></div>
-    <div class="tip"><span class="ic">🎬</span><div><b>Final Boss</b> รวมทุกหัวข้อ — ใช้เป็นไคลแม็กซ์ ให้เด็กเรียงลำดับการตัดสินใจ</div></div>
-  </div>
+      <!-- 4 -->
+      <section class="gd-sec" id="buttons">
+        <h2><span class="gd-no">4</span> ปุ่มควบคุมทั้ง 5</h2>
+        <div class="jx-card gd-btns">
+          <div><b><span data-icon="play"></span> เริ่ม</b><span>เปิดคำถามข้อถัดไป · ถ้ายังไม่เลือกภารกิจ จะเริ่มภารกิจถัดไปที่ยังไม่ได้เล่นให้เอง</span></div>
+          <div><b><span data-icon="lock"></span> ล็อก</b><span>ปิดรับคำตอบ กันตอบเพิ่ม — กดเมื่อตอบครบหรือหมดเวลา</span></div>
+          <div><b><span data-icon="bulb"></span> เฉลย</b><span>ขึ้นคำตอบที่ถูกและคำอธิบายทุกจอ · กดซ้ำเพื่อซ่อน</span></div>
+          <div><b><span data-icon="trophy"></span> ผลคะแนน</b><span>ขึ้นอันดับคะแนนทุกจอ · เป็นอิสระจากปุ่มเฉลย กดก่อนหรือหลังก็ได้</span></div>
+          <div><b><span data-icon="next"></span> ถัดไป</b><span>ไปข้อต่อไปในภารกิจเดียวกัน · ข้อสุดท้ายแล้วปุ่มจะปิดเอง</span></div>
+        </div>
+        <p class="gd-note" data-icon-before="check">ปุ่มที่กำลังแสดงผลอยู่บนจออื่นจะมี<b>ขอบเขียว</b>ล้อมรอบ ทำให้รู้ทันทีว่าตอนนี้นักเรียนเห็นอะไรอยู่</p>
+      </section>
 
-  <h2 class="sec" id="trouble"><span class="num">6</span> แก้ปัญหาเฉพาะหน้า</h2>
-  <div class="card"><table>
-    <tr><td><b>เด็กเข้าไม่ได้ "ไม่พบรหัสห้อง"</b></td><td>เช็กรหัสให้ตรง (ตัวใหญ่) · ห้องยัง "เปิด" อยู่ไหม</td></tr>
-    <tr><td><b>หน้าจอเด็กค้าง</b></td><td>ให้รีเฟรช (Cmd/แตะ refresh) — progress ถูกจำไว้ กลับเข้าได้เลย</td></tr>
-    <tr><td><b>เน็ตหลุด</b></td><td>ระบบขึ้นแถบเตือน + เก็บคำตอบไว้ ซิงก์อัตโนมัติเมื่อกลับมา</td></tr>
-    <tr><td><b>จอฉายไม่มีเสียง</b></td><td>กดปุ่ม 🎵 / 🔔 มุมขวาบน 1 ครั้ง (เบราว์เซอร์ต้องมีการคลิกก่อน)</td></tr>
-    <tr><td><b>ตัวเลข "ตอบแล้ว" ไม่ครบ</b></td><td>ปกติ — บางคนอาจยังคิด กด 🔒 ล็อก เมื่อพร้อม</td></tr>
-    <tr><td><b>host เผลอปิดแท็บ / รีเฟรช</b></td><td>เปิด host.html ใหม่ — ระบบจำการเข้าสู่ระบบไว้ (ไม่ต้องล็อกอินซ้ำ) → เข้าเซสชันเดิมอัตโนมัติ</td></tr>
-    <tr><td><b>ถูกออกจากระบบเอง</b></td><td>ปกติ — ระบบออกให้อัตโนมัติเมื่อไม่มีการใช้งาน 1 ชม. (ทั้ง host/admin) · แค่ล็อกอินใหม่</td></tr>
-    <tr><td><b>iPad นักเรียนค้างหน้าเก่า</b></td><td>นักเรียนกด <b>ออกจากห้อง</b> (ปุ่มหน้าสรุป/มุมล่าง) เพื่อเข้าห้องใหม่ · ระบบพาออกเองเมื่อไม่ใช้งาน 1 ชม.</td></tr>
-  </table></div>
+      <!-- 5 -->
+      <section class="gd-sec" id="build">
+        <h2><span class="gd-no">5</span> สร้างชุดคำถามของตัวเอง</h2>
+        <div class="jx-card">
+          <p>ที่แผงของฉัน กด <b>สร้างชุดใหม่</b> ตั้งชื่อและวิชา แล้วเข้าหน้าแก้ไข ในนั้น <b>คำถามอยู่ในการ์ดของแต่ละภารกิจ</b> — กด “เพิ่มคำถามในภารกิจนี้” ได้เลย ไม่ต้องไปหาจากที่อื่น</p>
+          <div class="gd-types">
+            <div><b>เลือกคำตอบ</b><span>สถานการณ์ + ตัวเลือก A–E เลือกข้อที่ถูก</span></div>
+            <div><b>สืบสวน</b><span>ข่าว + หลักฐานให้กดเปิดทีละชิ้น แล้วตัดสินว่าจริงหรือลวง</span></div>
+            <div><b>จับคู่ลงกล่อง</b><span>แตะการ์ด แล้วแตะกล่องที่ใช่ (ไม่ใช้การลาก จึงแม่นบนจอสัมผัส)</span></div>
+            <div><b>เรียงลำดับ</b><span>แตะขั้นตอนตามลำดับที่ควรทำ</span></div>
+            <div><b>ประเมินตนเอง</b><span>ไม่มีถูกผิด ทุกคนได้คะแนนเข้าร่วมเท่ากัน</span></div>
+          </div>
+          <p class="gd-note" data-icon-before="bulb">กด <b>บันทึก</b> แล้วใช้ได้ทันที ห้องที่กำลังเล่นอยู่จะไม่กระทบ เพราะห้องอ่านชุดคำถามตอนเปิดห้องครั้งเดียว</p>
+        </div>
+      </section>
 
-  <h2 class="sec" id="after"><span class="num">7</span> หลังจบกิจกรรม</h2>
-  <div class="card">
-    <ol class="steps">
-      <li>เปิด <b>admin.html</b> → ล็อกอิน → แท็บ <b>เซสชัน</b> → กด "เลือก" เซสชันวันงาน</li>
-      <li>แท็บ <b>วิเคราะห์</b> — ดูอัตราจบ · คะแนนเฉลี่ย · ภารกิจ/ข้อที่ตอบถูกน้อยสุด</li>
-      <li>แท็บ <b>ส่งออก</b> — ดาวน์โหลด <b>CSV / XLSX</b> (Player ID · คะแนนรายภารกิจ · XP · เหรียญตรา)</li>
-      <li>นำผลไปสรุป/ต่อยอดการสอน · <b>เก็บถาวร</b>เซสชันเก่า หรือกด <b>ลบ</b> เพื่อลบข้อมูลถาวร (ที่แท็บเซสชัน — ต้องปิดเซสชันก่อนจึงลบได้)</li>
-    </ol>
-    <p class="lead" style="margin-top:12px"><span class="ok">✓</span> ระบบไม่เก็บข้อมูลส่วนตัว (ชื่อจริง/เบอร์/บัตร) — เก็บแค่ชื่อเล่น·ห้อง·คะแนน</p>
-  </div>
-</div>
+      <!-- 6 -->
+      <section class="gd-sec" id="share">
+        <h2><span class="gd-no">6</span> คลังเกมและการเผยแพร่</h2>
+        <div class="jx-card">
+          <p>กด <b>เผยแพร่</b> บนการ์ดชุดของคุณ ชุดนั้นจะไปอยู่ใน <a href="community.html">คลังเกม</a> ให้ครูคนอื่น<b>หยิบไปเปิดห้องได้ทันที</b> โดยไม่ต้องคัดลอกหรือแก้อะไร — ต้นฉบับยังเป็นของคุณคนเดียว ปิดเผยแพร่เมื่อไหร่ก็ได้</p>
+          <p>ในทางกลับกัน คุณก็หยิบชุดของครูคนอื่นมาเปิดห้องให้ชั้นเรียนตัวเองได้เหมือนกัน และ<b>ผู้เยี่ยมชมที่ไม่มีบัญชี</b> ก็กด “เล่นคนเดียว” ลองเล่นได้ทุกชุดในคลัง</p>
+        </div>
+      </section>
 
-<script>
-(function(){var r=document.documentElement,K='ds-theme';try{r.setAttribute('data-theme',localStorage.getItem(K)||'dark')}catch(e){r.setAttribute('data-theme','dark')}
-document.getElementById('tt').addEventListener('click',function(){var n=r.getAttribute('data-theme')==='light'?'dark':'light';r.setAttribute('data-theme',n);try{localStorage.setItem(K,n)}catch(e){}});})();
-</script>
+      <!-- 7 -->
+      <section class="gd-sec" id="xp">
+        <h2><span class="gd-no">7</span> คะแนน XP ทำงานยังไง</h2>
+        <div class="jx-card">
+          <p><b>ตอบถูกได้คะแนน และยิ่งตอบเร็วยิ่งได้เยอะ</b> คะแนนไล่ลงตามเวลาที่ใช้ แต่ไม่ต่ำกว่าพื้น 40% เสมอ — คนที่คิดนานแล้วตอบถูกจึงยังได้รางวัล</p>
+          <table class="gd-tbl">
+            <thead><tr><th>ตอบเมื่อ (จากเวลา 45 วินาที)</th><th>ได้</th></tr></thead>
+            <tbody>
+              <tr><td>ทันที</td><td>1,000 XP</td></tr>
+              <tr><td>5 วินาที</td><td>930 XP</td></tr>
+              <tr><td>11 วินาที</td><td>850 XP</td></tr>
+              <tr><td>22 วินาที</td><td>710 XP</td></tr>
+              <tr><td>40 วินาที</td><td>470 XP</td></tr>
+              <tr><td>หมดเวลาพอดี</td><td>400 XP</td></tr>
+              <tr><td>ตอบผิด</td><td>0 XP</td></tr>
+              <tr><td>คำถามประเมินตนเอง</td><td>300 XP ทุกคน</td></tr>
+            </tbody>
+          </table>
+          <p>จบภารกิจได้โบนัสอีก <b>500 XP</b> · เลเวลไล่ที่ 0 / 3,000 / 7,000 / 12,000 / 18,000 XP · นักเรียนเห็นแถบ “อีกกี่ XP ถึงระดับถัดไป” บนบัตรผ่านตลอดเวลา</p>
+          <p class="gd-note" data-icon-before="lock">คะแนนคำนวณและบันทึกโดย<b>เครื่องของครู</b>ตอนกดเฉลยเท่านั้น นักเรียนแก้คะแนนตัวเองไม่ได้ และคำตอบที่ส่งแล้วแก้ไม่ได้</p>
+        </div>
+      </section>
+
+      <!-- 8 -->
+      <section class="gd-sec" id="room">
+        <h2><span class="gd-no">8</span> เตรียมห้องเรียนจริง</h2>
+        <div class="jx-card">
+          <ul class="gd-list">
+            <li><b>ซ้อมก่อนหนึ่งรอบ</b> ด้วยโหมดบอต 10 ตัว ให้ชินกับจังหวะปุ่ม</li>
+            <li><b>เขียนรหัสห้องไว้บนจอ</b> — จอฉายมี QR ให้สแกนด้วย นักเรียนไม่ต้องพิมพ์</li>
+            <li><b>บอกนักเรียนว่าใช้ชื่อเล่น</b> ระบบไม่เก็บชื่อจริง เบอร์ หรืออีเมลของนักเรียนเลย</li>
+            <li><b>เผื่อเวลา 12–15 นาทีต่อภารกิจ</b> ถ้าเวลาไม่พอ ข้ามภารกิจได้ แตะภารกิจไหนก็เริ่มได้</li>
+            <li><b>Wi-Fi</b> ควรรับจำนวนเครื่องได้ทั้งห้อง ถ้าหลุดชั่วคราว ระบบจะซิงก์ให้เมื่อกลับมาออนไลน์</li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- 9 -->
+      <section class="gd-sec" id="trouble">
+        <h2><span class="gd-no">9</span> แก้ปัญหาที่พบบ่อย</h2>
+        <div class="jx-card gd-qa">
+          <details open>
+            <summary>นักเรียนกรอกรหัสแล้วขึ้นว่า “ห้องนี้จบไปแล้ว”</summary>
+            <p>รหัสห้อง<b>ใช้ได้ครั้งเดียว</b> พอครูกดจบกิจกรรม รหัสนั้นจะตายทันทีและระบบออกรหัสใหม่ให้ครู — บอกรหัสใหม่ที่อยู่บนแถบบนของแผงคุมเกมให้นักเรียนแทน</p>
+          </details>
+          <details>
+            <summary>นักเรียนหลุดออกจากห้อง แล้วเข้าใหม่ไม่ได้</summary>
+            <p>ให้กดเข้าห้องอีกครั้งจากหน้าแรก ระบบจะถามว่าจะออกจากห้องเดิมไหม ตอบ “ออกแล้วเข้าห้องใหม่” จะได้รหัสผู้เล่นใหม่และเล่นต่อได้ · คะแนนเดิมของรหัสผู้เล่นเก่าจะยังอยู่ในอันดับ</p>
+          </details>
+          <details>
+            <summary>นักเรียน iPhone ค้างที่ “กำลังเชื่อมต่อ”</summary>
+            <p>มักเกิดตอนเปิดลิงก์<b>ในแอป</b> (LINE, กล้อง, IG) ซึ่งบล็อกที่เก็บข้อมูลการเข้าสู่ระบบ ให้แตะปุ่มแชร์มุมจอ แล้วเลือก “เปิดใน Safari” · หรือปิดโหมดการเรียกดูแบบส่วนตัว</p>
+          </details>
+          <details>
+            <summary>กดปุ่มแล้วไม่มีอะไรเกิดขึ้น</summary>
+            <p>ถ้าเขียนข้อมูลไม่สำเร็จ ระบบจะขึ้น<b>แถบสีแดงบอกเหตุผล</b>เสมอ ถ้าไม่มีแถบขึ้นเลยแปลว่าปุ่มนั้นถูกปิดอยู่ในสถานะปัจจุบัน (เช่น “ถัดไป” จะปิดเมื่ออยู่ข้อสุดท้ายของภารกิจ)</p>
+          </details>
+          <details>
+            <summary>อยากเล่นซ้ำภารกิจเดิม</summary>
+            <p>แตะการ์ดภารกิจนั้นในรางซ้ายได้เลย แม้จะมีติ๊กเขียวแล้วก็เริ่มใหม่ได้ คะแนนที่เคยได้จะไม่ถูกลบ</p>
+          </details>
+        </div>
+      </section>
+
+      <section class="gd-sec">
+        <div class="jx-card jx-cta">
+          <span data-mascot="trophy" data-size="100"></span>
+          <div>
+            <h2 style="margin:0;font-family:var(--font-display);font-size:1.5rem">พร้อมเปิดห้องแล้วใช่ไหม</h2>
+            <p class="jx-lead" style="margin-top:8px">สมัครฟรี หยิบชุดตัวอย่างไปเปิดห้องได้ใน 5 นาที</p>
+            <div class="jx-hero__cta" style="margin-top:16px;justify-content:flex-start">
+              <a class="ds-btn ds-btn--primary" href="login.html?mode=signup&amp;next=teacher.html">สมัครใช้งานฟรี</a>
+              <a class="ds-btn ds-btn--ghost" href="community.html">ดูคลังเกมก่อน</a>
+            </div>
+          </div>
+        </div>
+      </section>
+    </article>
+  </main>
+
+  <footer class="jx-foot">JDKS <b>Arena</b> — สนามแข่งแห่งการเรียนรู้</footer>
+
+<script type="module" src="js/ui.js"></script>
+<script type="module" src="js/topbar.js"></script>
+<script type="module" src="js/mascot.js"></script>
+<script type="module" src="js/guide.js"></script>
+</body>
+</html>
