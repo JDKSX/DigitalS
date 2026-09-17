@@ -25,7 +25,18 @@ const esc = (s) => String(s == null ? '' : s)
 onAuth(async (user) => {
   if (!user || user.isAnonymous) { location.replace(loginUrl('login')); return; }
   state.user = user;
-  state.teacher = (await getTeacher(user.uid)) || (await ensureTeacherProfile(user));
+
+  // Reading (or creating) the teacher profile can fail — a network blip, or
+  // rules that have not propagated yet. This used to throw out of the whole
+  // handler, leaving the dashboard stuck on "loading" forever: from the
+  // teacher's side that looks exactly like the login not working.
+  try {
+    state.teacher = (await getTeacher(user.uid)) || (await ensureTeacherProfile(user));
+  } catch (e) {
+    return bootFailed(e);
+  }
+  if (!state.teacher) return bootFailed(new Error('ไม่พบโปรไฟล์ผู้สอน'));
+
   applyBrand(state.teacher.brand);
   try {
     startIdleTimer({ key: 'ds-idle-staff', minutes: 60, onIdle: async () => {
@@ -35,6 +46,27 @@ onAuth(async (user) => {
   } catch (_e) {}
   await refresh();
 });
+
+/** Say what went wrong and offer both ways out, rather than a dead screen. */
+function bootFailed(err) {
+  try { console.error('[JDKS Arena teacher]', err); } catch (_e) {}
+  $('#panel').innerHTML = `<div class="jx-empty">
+    <div class="jx-empty__ic">${icon('alert')}</div>
+    <h3>เปิดแผงของคุณไม่สำเร็จ</h3>
+    <p>${esc((err && err.message) || 'ไม่ทราบสาเหตุ')}<br>
+       เข้าสู่ระบบสำเร็จแล้ว แต่โหลดข้อมูลผู้สอนไม่ได้ — ลองใหม่อีกครั้ง หรือออกจากระบบแล้วเข้าใหม่</p>
+    <div class="jx-hero__cta">
+      <button class="ds-btn ds-btn--primary" id="bootRetry" type="button">ลองใหม่</button>
+      <button class="ds-btn ds-btn--ghost" id="bootOut" type="button">ออกจากระบบ</button>
+    </div>
+  </div>`;
+  hydrateIcons($('#panel'));
+  const r = $('#bootRetry'); if (r) r.addEventListener('click', () => location.reload());
+  const o = $('#bootOut'); if (o) o.addEventListener('click', async () => {
+    try { await signOutUser(); } catch (_e) {}
+    location.href = loginUrl('login');
+  });
+}
 
 /* ---------------- data ---------------- */
 async function refresh() {
