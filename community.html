@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>คลังเกมของครู · JDKS Arena</title>
+  <meta name="description" content="เกมตอบคำถามที่ครูทั่วประเทศสร้างและเผยแพร่ไว้ เลือกเล่นได้ทันทีโดยไม่ต้องสมัครสมาชิก">
+  <meta name="theme-color" content="#7C3AED">
+  <script>try{document.documentElement.setAttribute('data-theme',localStorage.getItem('ds-theme')||'light')}catch(e){document.documentElement.setAttribute('data-theme','light')}</script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Kanit:wght@500;600;700&family=Sarabun:wght@400;600;700&family=JetBrains+Mono:wght@600;700&display=swap">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/arena.css">
+</head>
+<body>
+  <div class="ds-gridbg" aria-hidden="true"></div>
+  <div class="ds-orb ds-orb--violet" style="top:-200px;left:-6%" aria-hidden="true"></div>
+
+  <header class="jx-top" data-topbar data-tag="คลังเกม" data-active="community"></header>
+
+  <main class="jx-wrap">
+    <section class="jx-comm-hero">
+      <div>
+        <p class="jx-eyebrow">Community Library</p>
+        <h1 class="jx-h2" style="font-size:clamp(1.8rem,5vw,2.8rem)">เกมที่ครูคนอื่นสร้างไว้<br>หยิบไปเล่นได้เลย</h1>
+        <p class="jx-lead">
+          เลือกชุดที่ชอบแล้วกด “เล่นเลย” ได้ทันที — <b>ไม่ต้องสมัครสมาชิก</b>
+          อยากได้เป็นของตัวเองหรืออยากเปิดห้องให้ทั้งชั้นเล่นพร้อมกัน ค่อยสมัครทีหลังก็ได้
+        </p>
+      </div>
+      <span data-mascot="people" data-size="150" class="mx-pop jx-hide-sm"></span>
+    </section>
+
+    <div class="jx-comm-bar">
+      <input id="q" class="ds-input" type="search" placeholder="ค้นหาชื่อเกม วิชา หรือชื่อครู…" autocomplete="off">
+      <span class="jx-chip" id="count">—</span>
+    </div>
+
+    <section id="list" style="margin-top:20px">
+      <div class="jx-empty"><div class="jx-empty__ic">⏳</div><h3>กำลังเปิดคลัง…</h3></div>
+    </section>
+
+    <section class="jx-section">
+      <div class="jx-card jx-cta">
+        <span data-mascot="book" data-size="110"></span>
+        <div>
+          <h2 class="jx-h2" style="font-size:1.6rem;margin:0">อยากสร้างเกมของวิชาตัวเองไหม?</h2>
+          <p class="jx-lead" style="margin-top:8px">
+            สมัครฟรี สร้างชุดคำถามของคุณเอง เปิดห้องให้นักเรียนเล่นพร้อมกันทั้งชั้น
+            และเผยแพร่ให้ครูคนอื่นหยิบไปใช้ต่อได้
+          </p>
+          <div class="jx-hero__cta" style="margin-top:18px;justify-content:flex-start">
+            <a class="ds-btn ds-btn--primary" href="login.html?mode=signup&amp;next=teacher.html">สมัครใช้งานฟรี</a>
+            <a class="ds-btn ds-btn--ghost" href="guide.html">ดูคู่มือก่อน</a>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="jx-foot">JDKS <b>Arena</b> — สนามแข่งแห่งการเรียนรู้</footer>
+
+<script type="module" src="js/ui.js"></script>
+<script type="module" src="js/topbar.js"></script>
+<script type="module" src="js/mascot.js"></script>
+<script type="module" src="js/community.js"></script>
+</body>
+</html>
