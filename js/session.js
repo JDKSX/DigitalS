@@ -245,8 +245,23 @@ export async function getMissionPlayers(sessionId, missionId) {
 }
 
 /** Apply a batch of per-player updates. updates: [{playerId, xpDelta?, missionId?, badge?, progressDelta?}] */
-export async function applyScores(sessionId, updates) {
-  if (!updates.length) return;
+/**
+ * Award XP and mark the question scored in ONE batch.
+ *
+ * These used to be two separate writes. If the first landed and the second
+ * did not, the next snapshot saw an unscored question and awarded the XP
+ * again — one network hiccup was enough to double everyone's score.
+ * Committing them together makes a retry always safe.
+ *
+ * @param mark { scoredQuestion, completedMission } — plain ids, so callers
+ *             never need to know about Firestore field values.
+ */
+export async function applyScores(sessionId, updates, mark = null) {
+  const marks = {};
+  if (mark && mark.scoredQuestion) marks.scoredQuestions = arrayUnion(mark.scoredQuestion);
+  if (mark && mark.completedMission) marks.completedMissions = arrayUnion(mark.completedMission);
+  const hasMarks = Object.keys(marks).length > 0;
+  if (!updates.length && !hasMarks) return;
   const batch = writeBatch(db);
   updates.forEach((u) => {
     const ref = doc(db, COLL.users, `${sessionId}_${u.playerId}`);
@@ -256,16 +271,11 @@ export async function applyScores(sessionId, updates) {
     if (u.progressDelta) patch.progress = increment(u.progressDelta);
     batch.update(ref, patch);
   });
+  if (hasMarks) batch.update(doc(db, COLL.sessions, sessionId), marks);
   await batch.commit();
 }
 
 /** Idempotency flags on the session. */
-export function markScored(sessionId, questionId) {
-  return updateDoc(doc(db, COLL.sessions, sessionId), { scoredQuestions: arrayUnion(questionId) });
-}
-export function markMissionComplete(sessionId, missionId) {
-  return updateDoc(doc(db, COLL.sessions, sessionId), { completedMissions: arrayUnion(missionId) });
-}
 
 /** Leaderboard doc — top-N with NO private data (nickname/playerId/xp only). */
 export function writeLeaderboard(sessionId, top) {

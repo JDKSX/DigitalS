@@ -8,7 +8,7 @@ import { onAuth, getTeacher, ensureTeacherProfile, signOutUser } from './auth.js
 import { loginUrl } from './topbar.js';
 import { startIdleTimer } from './idle.js';
 import { createSession, listenSession, listenPlayers, listenQuestionAnswers, updateSession, updateStats,
-  getQuestionAnswersOnce, getMissionPlayers, applyScores, markScored, markMissionComplete, writeLeaderboard,
+  getQuestionAnswersOnce, getMissionPlayers, applyScores, writeLeaderboard,
   createDemoPlayers, submitAnswer } from './session.js';
 import { loadGame, questionCount } from './content.js';
 import { shapeIcon } from './game.js';
@@ -466,12 +466,16 @@ async function maybeScore(s) {
         u.xpDelta += bonus; if (badge) u.badge = badge; u.progressDelta = 1;
       });
     }
-    await applyScores(state.sid, updates);
-    await markScored(state.sid, qid);
-    if (isLast && !alreadyDone) await markMissionComplete(state.sid, s.currentMission);
+    // One batch: the XP and the "already scored" marker land together, so a
+    // retry after a failure can never award the same question twice.
+    await applyScores(state.sid, updates, {
+      scoredQuestion: qid,
+      completedMission: (isLast && !alreadyDone) ? s.currentMission : null,
+    });
   } catch (e) {
     scoredLocal.delete(qid); // allow retry on next snapshot
-    console.warn('scoring failed', e);
+    toast('ให้คะแนนข้อนี้ไม่สำเร็จ — ระบบจะลองใหม่เอง ถ้ายังไม่ขึ้นให้กด “เฉลย” ซ้ำ', 'error');
+    try { console.error('[JDKS Arena scoring]', e); } catch (_e) {}
   }
 }
 
