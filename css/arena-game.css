@@ -38,6 +38,14 @@
 
 /* ---- answer tiles ------------------------------------------------- */
 .qx-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 13px; margin-top: 4px; }
+/* Two columns on anything wider than a phone, like every quiz game people
+   already know. Three columns leaves five options as 3 + 2 with a hole at the
+   end of the second row; an odd last tile spanning the row reads as a choice
+   rather than a gap. (The projector variant keeps its own wider grid.) */
+@media (min-width: 620px) {
+  .qx-tiles:not(.qx-tiles--big) { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+.qx-tiles:not(.qx-tiles--big) > :last-child:nth-child(odd) { grid-column: 1 / -1; }
 .qx-tile {
   display: flex; align-items: center; gap: 14px; text-align: left; width: 100%;
   min-height: 86px; padding: 16px 18px; cursor: pointer;

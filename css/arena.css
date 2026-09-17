@@ -198,8 +198,10 @@ textarea.ds-input { padding-block: 12px; min-height: auto; line-height: 1.6; }
 .jx-lead { color: var(--text-muted); max-width: 60ch; margin-top: 10px; font-size: 1.02rem; }
 
 .jx-grid { display: grid; gap: 18px; margin-top: 24px; }
-.jx-grid--3 { grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); }
-.jx-grid--2 { grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); }
+/* auto-fit + a cap so a library with two packs centres them instead of
+   hugging the left edge of an otherwise empty row. */
+.jx-grid--3 { grid-template-columns: repeat(auto-fit, minmax(290px, 400px)); justify-content: center; }
+.jx-grid--2 { grid-template-columns: repeat(auto-fit, minmax(340px, 460px)); justify-content: center; }
 .jx-card {
   background: var(--card-bg); border: 2px solid var(--line); border-radius: var(--r-lg);
   padding: 24px; box-shadow: var(--shadow-2);
