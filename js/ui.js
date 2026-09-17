@@ -1,5 +1,5 @@
 /* =================================================================
-   Shared UI chrome bootstrap — DIGITAL SURVIVAL
+   Shared UI chrome bootstrap — JDKS ARENA
    Wires theme toggle + hydrates [data-icon] placeholders on every page.
    (Anti-FOUC theme is set by an inline <head> script before paint.)
    ================================================================= */

@@ -1,5 +1,5 @@
 /* =================================================================
-   Analytics — DIGITAL SURVIVAL (pure computation, §32)
+   Analytics — JDKS ARENA (pure computation, §32)
    Computes post-activity stats from users + answers + content.
    ================================================================= */
 import { levelForXp } from './content.js';

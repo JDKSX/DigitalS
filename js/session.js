@@ -1,5 +1,5 @@
 /* =================================================================
-   Session + player join — DIGITAL SURVIVAL
+   Session + player join — JDKS ARENA
    Read-cheap design: a student listens to ONE session doc + their OWN
    player doc. Content (missions/questions) is loaded from static JSON.
    ================================================================= */
@@ -21,22 +21,33 @@ export function generateSessionCode(len = 5) {
   for (let i = 0; i < len; i++) s += CODE_ALPHABET[Math.floor(Math.random() * CODE_ALPHABET.length)];
   return s;
 }
+/* 4 digits = 10,000 slots. With 120 players in a room the chance that a fresh
+   id collides is ~1%, so a student who rejoins almost never has to retry. */
 function randomPlayerId() {
-  return 'P' + String(Math.floor(Math.random() * 1000)).padStart(3, '0');
+  return 'P' + String(Math.floor(Math.random() * 10000)).padStart(4, '0');
+}
+
+/** Has this code EVER been used (open or closed)? Room codes are one-time. */
+async function codeEverUsed(code) {
+  const snap = await getDocs(query(
+    collection(db, COLL.sessions), where('code', '==', code.toUpperCase()), limit(1),
+  ));
+  return !snap.empty;
 }
 
 /* ---------- HOST: create a session ---------- */
-export async function createSession(hostUid, { title = 'DIGITAL SURVIVAL', demo = false } = {}) {
-  // find an unused code
-  let code;
-  for (let i = 0; i < 6; i++) {
+export async function createSession(hostUid, { title = 'JDKS Arena', demo = false, packId = null } = {}) {
+  // A room code is single-use: once a code has existed it is never handed out
+  // again, so an old code in a student's history can never reach a live room.
+  let code = generateSessionCode();
+  for (let i = 0; i < 8; i++) {
+    if (!(await codeEverUsed(code))) break;
     code = generateSessionCode();
-    const found = await findSessionByCode(code);
-    if (!found) break;
   }
   const ref = doc(collection(db, COLL.sessions));
   const data = {
     code, title, demo,
+    packId,                         // which question pack this room plays
     status: 'open',                 // open | closed
     phase: 'lobby',                 // lobby | mission_intro | question_open | locked | revealed | paused
     currentMission: null,
@@ -78,7 +89,14 @@ export async function joinSession(code, nickname, room = '') {
   const uid = auth.currentUser.uid;
 
   const session = await findSessionByCode(code);
-  if (!session) throw new Error('ไม่พบรหัสห้อง หรือห้องปิดแล้ว');
+  if (!session) {
+    // Distinguish "never existed" from "already finished" — a student staring
+    // at a code the teacher just closed deserves the real reason.
+    const used = await codeEverUsed(code).catch(() => false);
+    throw new Error(used
+      ? 'ห้องนี้จบไปแล้ว — รหัสห้องใช้ได้ครั้งเดียว ขอรหัสใหม่จากครูได้เลย'
+      : 'ไม่พบรหัสห้องนี้ ลองตรวจตัวอักษรอีกครั้ง');
+  }
 
   // Allocate a unique Player ID WITHOUT reading other players' docs (privacy
   // rules forbid students reading docs they don't own). Strategy: try to
@@ -86,6 +104,7 @@ export async function joinSession(code, nickname, room = '') {
   // UPDATE and is rejected by the rules → we catch it and retry a new id.
   const player = {
     sessionId: session.id,
+    hostUid: session.hostUid || null,   // denormalised so rules stay cheap (see PLATFORM.md)
     nickname,
     room: room.trim(),
     authUid: uid,
@@ -112,7 +131,7 @@ export async function joinSession(code, nickname, room = '') {
   }
   if (!playerId) throw new Error('เข้าร่วมไม่สำเร็จ กรุณาลองใหม่อีกครั้ง');
 
-  const stored = { sessionId: session.id, playerId, docId: `${session.id}_${playerId}`, code };
+  const stored = { sessionId: session.id, playerId, docId: `${session.id}_${playerId}`, code, hostUid: session.hostUid || null };
   try {
     localStorage.setItem(PLAYER_KEY, JSON.stringify(stored));
     localStorage.setItem('ds-idle-student', String(Date.now())); // fresh idle clock per join
@@ -141,6 +160,7 @@ export async function submitAnswer(stored, { questionId, missionId, choice, isCo
   const data = {
     sessionId: stored.sessionId,
     playerId: stored.playerId,
+    hostUid: stored.hostUid || null,
     questionId, missionId,
     choice,
     isCorrect: !!isCorrect,
@@ -250,21 +270,34 @@ export function listenLeaderboard(sessionId, cb, onErr) {
 /** Create N bot players owned by the host (authUid = host uid). */
 export async function createDemoPlayers(sessionId, n = 10) {
   const uid = auth.currentUser && auth.currentUser.uid;
+  // the host creates these, so the room's hostUid is this user
   const batch = writeBatch(db);
   const bots = [];
   for (let i = 1; i <= n; i++) {
     const pid = 'P' + String(i).padStart(3, '0');
     const ref = doc(db, COLL.users, `${sessionId}_${pid}`);
     batch.set(ref, {
-      sessionId, playerId: pid, nickname: 'Bot-' + i, room: 'DEMO', authUid: uid,
+      sessionId, hostUid: uid, playerId: pid, nickname: 'Bot-' + i, room: 'DEMO', authUid: uid,
       xp: 0, level: 1, progress: 0, missionScores: {}, badges: [],
       joinedAt: serverTimestamp(), lastSeen: serverTimestamp(),
     });
-    bots.push({ sessionId, playerId: pid });
+    bots.push({ sessionId, playerId: pid, hostUid: uid });
   }
   await batch.commit();
   return bots;
 }
+
+/** TEACHER: the rooms I have hosted (newest first). */
+export async function listMySessions(hostUid, max = 30) {
+  const snap = await getDocs(query(
+    collection(db, COLL.sessions),
+    where('hostUid', '==', hostUid),
+    limit(max),
+  ));
+  return snap.docs.map((d) => ({ id: d.id, ...d.data() }))
+    .sort((a, b) => ms(b.createdAt) - ms(a.createdAt));
+}
+function ms(t) { return (t && t.toMillis) ? t.toMillis() : 0; }
 
 /* ---------- ADMIN: read & manage (staff-only) ---------- */
 export async function getSessions() {

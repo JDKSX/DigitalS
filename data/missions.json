@@ -9,43 +9,41 @@
   "levels": [
     {
       "level": 1,
-      "nameTh": "มือใหม่ดิจิทัล",
-      "name": "Digital Rookie",
+      "nameTh": "มือใหม่",
+      "name": "Rookie",
       "minXp": 0
     },
     {
       "level": 2,
-      "nameTh": "ผู้ใช้อัจฉริยะ",
-      "name": "Smart User",
-      "minXp": 800
+      "nameTh": "ผู้เรียนรู้",
+      "name": "Learner",
+      "minXp": 3000
     },
     {
       "level": 3,
       "nameTh": "นักสืบดิจิทัล",
-      "name": "Digital Detective",
-      "minXp": 1800
+      "name": "Detective",
+      "minXp": 7000
     },
     {
       "level": 4,
       "nameTh": "ผู้พิทักษ์ไซเบอร์",
-      "name": "Cyber Guardian",
-      "minXp": 3200
+      "name": "Guardian",
+      "minXp": 12000
     },
     {
       "level": 5,
-      "nameTh": "ผู้รอดชีวิตดิจิทัล",
-      "name": "Digital Survivor",
-      "minXp": 5000
+      "nameTh": "แชมป์สนาม",
+      "name": "Arena Champion",
+      "minXp": 18000
     }
   ],
   "xpRules": {
-    "correct": 100,
-    "fastBonus": 20,
-    "fastBonusWithinMs": 8000,
-    "missionComplete": 100,
-    "criticalThinking": 200,
-    "finalBoss": 500,
-    "note": "ให้ความเร็วน้ำหนักน้อย (§10) — คุณภาพการตัดสินใจเป็นตัวหลัก"
+    "base": 1000,
+    "minFactor": 0.4,
+    "participation": 300,
+    "missionComplete": 500,
+    "note": "ตอบถูกได้ฐาน 1000 · ยิ่งตอบเร็วยิ่งได้เต็ม ช้าสุดยังได้ 40%"
   },
   "badges": [
     {

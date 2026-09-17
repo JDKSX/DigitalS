@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>เล่นเดี่ยว · JDKS Arena</title>
+  <meta name="theme-color" content="#7C3AED">
+  <script>try{document.documentElement.setAttribute('data-theme',localStorage.getItem('ds-theme')||'light')}catch(e){document.documentElement.setAttribute('data-theme','light')}</script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Kanit:wght@500;600;700&family=Sarabun:wght@400;600;700&family=JetBrains+Mono:wght@600;700&display=swap">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/arena.css">
+  <link rel="stylesheet" href="css/arena-game.css">
+  <link rel="stylesheet" href="css/student.css">
+</head>
+<body>
+  <div class="ds-gridbg" aria-hidden="true"></div>
+
+  <header class="jx-top jx-top--play">
+    <a class="jx-logo" href="community.html">
+      <span class="jx-logo__mark">JA</span>
+      <span class="jx-logo__name">JDKS <b>Arena</b><span class="jx-logo__tag" id="packName">เล่นเดี่ยว</span></span>
+    </a>
+    <div class="jx-top__spacer"></div>
+    <span class="jx-solo-xp" id="xpChip">0 XP</span>
+    <button class="ds-iconbtn" data-role="theme-toggle" type="button" aria-label="สลับธีม" title="สลับธีม">
+      <span class="icon-sun" data-icon="sun"></span><span class="icon-moon" data-icon="moon"></span>
+    </button>
+    <a class="ds-btn ds-btn--ghost jx-hide-sm" href="community.html">ออก</a>
+  </header>
+
+  <div class="jx-solo-progress"><i id="bar" style="width:0%"></i></div>
+
+  <main class="jx-wrap jx-wrap--play">
+    <section class="ds-card" id="stage" style="padding:clamp(18px,4vw,30px)">
+      <div class="qx-wait"><div class="qx-dots"><i></i><i></i><i></i></div><p class="ds-muted">กำลังเปิดเกม…</p></div>
+    </section>
+  </main>
+
+<script type="module" src="js/ui.js"></script>
+<script type="module" src="js/play.js"></script>
+</body>
+</html>

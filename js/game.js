@@ -1,5 +1,5 @@
 /* =================================================================
-   Game engine (student side) — DIGITAL SURVIVAL
+   Game engine (student side) — JDKS ARENA
    Renders the current question by type, captures the answer, submits
    it (write-once), and mirrors locked / revealed states.
    Types: scenario · investigation · dragsort · ordering · assessment.
@@ -7,16 +7,51 @@
    ================================================================= */
 import { submitAnswer } from './session.js';
 import { icon } from './icons.js';
+import { speedFactor, xpForAnswer } from './scoring.js';
+import { mascot } from './mascot.js';
+
+/* Answer tiles: one saturated colour + one shape per slot, so a student can
+   shout "เขียวสี่เหลี่ยม!" across the room and everyone knows which one. */
+const TILE = [
+  { c: '#E11D48', d: '#9F1239' },
+  { c: '#2563EB', d: '#1E40AF' },
+  { c: '#F59E0B', d: '#B45309' },
+  { c: '#16A34A', d: '#166534' },
+  { c: '#7C3AED', d: '#5B21B6' },
+  { c: '#0891B2', d: '#155E75' },
+];
+/* Drawn, not typed: an emoji star renders differently (or in someone else's
+   colours) on every platform, and these shapes are the shared language between
+   the student's tile, the projector and the teacher's answer spread. */
+const SHAPES = [
+  '<polygon points="12,3.5 21,20 3,20"/>',
+  '<polygon points="12,2.5 21.5,12 12,21.5 2.5,12"/>',
+  '<circle cx="12" cy="12" r="9"/>',
+  '<rect x="3.5" y="3.5" width="17" height="17" rx="3"/>',
+  '<polygon points="12,2.5 14.7,9.3 22,9.8 16.4,14.5 18.2,21.5 12,17.6 5.8,21.5 7.6,14.5 2,9.8 9.3,9.3"/>',
+  '<polygon points="12,2.5 20.5,7.2 20.5,16.8 12,21.5 3.5,16.8 3.5,7.2"/>',
+];
+/** The shape for answer slot i, as an inline SVG. */
+export function shapeIcon(i, cls = '') {
+  return `<svg class="qx-shape ${cls}" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">${SHAPES[i % SHAPES.length]}</svg>`;
+}
 
 const SUBMIT_KEY = 'ds-answers';
 let timerIv = null;
 
-function getSubmitted() { try { return JSON.parse(localStorage.getItem(SUBMIT_KEY) || '{}'); } catch (_e) { return {}; } }
+/* Solo (account-free) play keeps its answers in memory only. */
+let soloSubs = {};
+export function resetSolo() { soloSubs = {}; }
+function getSubmitted(ctx) {
+  if (ctx && ctx.solo) return soloSubs;
+  try { return JSON.parse(localStorage.getItem(SUBMIT_KEY) || '{}'); } catch (_e) { return {}; }
+}
 /** Key answers by sessionId+questionId so a device reused across sessions (or a
     previous student's iPad) never inherits an old answer as "already submitted". */
 function subKey(ctx, qid) { return `${(ctx.stored && ctx.stored.sessionId) || ''}_${qid}`; }
-function markSubmitted(key, choice, isCorrect) {
-  const m = getSubmitted(); m[key] = { choice, isCorrect };
+function markSubmitted(ctx, key, choice, isCorrect, responseMs) {
+  const m = getSubmitted(ctx); m[key] = { choice, isCorrect, responseMs: responseMs || 0 };
+  if (ctx && ctx.solo) return;
   try { localStorage.setItem(SUBMIT_KEY, JSON.stringify(m)); } catch (_e) {}
 }
 function numTime(t) { return typeof t === 'number' ? t : (t && t.toMillis ? t.toMillis() : Date.now()); }
@@ -27,7 +62,7 @@ export function renderGame(ctx) {
   if (timerIv) { clearInterval(timerIv); timerIv = null; }
   const q = questions[session.currentQuestion];
   if (!q) { container.innerHTML = notReady(); return; }
-  ctx.q = q; ctx.sub = getSubmitted()[subKey(ctx, q.id)];
+  ctx.q = q; ctx.sub = getSubmitted(ctx)[subKey(ctx, q.id)];
   window.__ctxQ = q; // used by the delegated evidence-reveal handler
 
   // เฉลย (showAnswer) และ ผลคะแนน (showResults) เป็นอิสระต่อกัน วิทยากรกดสลับได้
@@ -66,7 +101,7 @@ function standingsHtml(ctx) {
   const top = lb.slice(0, 5);
   const inTop = top.some((p) => p.playerId === me.playerId);
   return `<div class="stand ds-fade-up">
-    <div class="stand__h">🏆 อันดับคะแนน <span class="ds-en">Live Standings</span></div>
+    <div class="stand__h">${icon('trophy')} อันดับคะแนน <span class="ds-en">Live Standings</span></div>
     ${top.length ? top.map((p, i) => `<div class="stand__row ${p.playerId === me.playerId ? 'is-me' : ''}">
         <span class="stand__rk ${i < 3 ? 'is-top' : ''}">${i + 1}</span>
         <span class="stand__nm">${esc(p.nickname) || '—'} <span class="ds-pid">${esc(p.playerId)}</span></span>
@@ -80,44 +115,122 @@ function standingsHtml(ctx) {
 }
 
 /* =====================================================================
+   Question chrome — timer ring + the XP that is still up for grabs
+   ===================================================================== */
+function maxXp(ctx) {
+  const rules = (ctx.content && ctx.content.xpRules) || {};
+  return Number(ctx.q.xp) || Number(rules.base) || 1000;
+}
+function qxHead(ctx, label, opts = {}) {
+  const live = opts.live !== false;
+  return `<div class="qx-head">
+    <span class="qx-timer ${live ? '' : 'is-off'}" id="qTimer"><b>--</b></span>
+    <span class="ds-chip ${live ? 'ds-chip--live' : ''}">${label}</span>
+    ${live ? `<span class="qx-xp" id="qXpNow" title="ยิ่งตอบเร็ว ยิ่งได้คะแนนเยอะ">+${fmtXp(maxXp(ctx))} XP</span>` : ''}
+  </div>`;
+}
+/** One answer tile. st: {selected, correct, wrong, static} */
+function tile(o, i, st = {}) {
+  const t = TILE[i % TILE.length];
+  const cls = ['qx-tile', st.selected && 'is-selected', st.correct && 'is-correct',
+    st.wrong && 'is-wrong', st.faded && 'is-faded'].filter(Boolean).join(' ');
+  const mark = st.correct ? `<span class="qx-tile__mark">${icon('check')}</span>`
+    : st.wrong ? `<span class="qx-tile__mark">${icon('close')}</span>` : '';
+  const style = `--tile:${t.c};--tile-d:${t.d}`;
+  return st.static
+    ? `<div class="${cls}" style="${style}"><span class="qx-tile__shape">${shapeIcon(i)}</span><span class="qx-tile__txt">${o.text}</span>${mark}</div>`
+    : `<button type="button" class="${cls}" style="${style}" data-key="${o.key}">
+        <span class="qx-tile__shape">${shapeIcon(i)}</span><span class="qx-tile__txt">${o.text}</span></button>`;
+}
+
+/** The question's own wording, whatever its type (used by the projector). */
+export function promptOf(q) {
+  if (!q) return '';
+  return q.q_prompt || q.situation || q.question || q.prompt || q.scenario || '';
+}
+/** Read-only answer tiles for the projector, optionally marking the answer. */
+export function answerTiles(q, { correct = null, big = false } = {}) {
+  if (!q || !Array.isArray(q.options) || !q.options.length) return '';
+  return `<div class="qx-tiles ${big ? 'qx-tiles--big' : ''}">${q.options.map((o, i) => tile(o, i, {
+    static: true,
+    correct: correct != null && o.key === correct,
+    faded: correct != null && o.key !== correct,
+  })).join('')}</div>`;
+}
+
+/* =====================================================================
    CHOICE (scenario + investigation) — single-select A..E / TRUE..
    ===================================================================== */
 function renderChoice(ctx, headerHtml) {
   const { container, session, q, sub } = ctx;
   const phase = session.phase;
-  if (phase === 'question_open' && sub) return submittedBox(container, `คำตอบของคุณ: <b class="ds-pid">${sub.choice}</b>`);
+  if (phase === 'question_open' && sub) return submittedBox(ctx, `คำตอบของคุณคือ <b>${esc(labelOf(q, sub.choice))}</b>`);
   if (phase === 'locked') return lockedChoice(ctx, headerHtml);
   if (phase === 'revealed') return revealedChoice(ctx, headerHtml);
 
   container.innerHTML = `
-    <div class="q-head"><span class="ds-chip ds-chip--live">กำลังตอบ</span><span class="ds-timer q-timer" id="qTimer">--:--</span></div>
+    ${qxHead(ctx, 'กำลังตอบ')}
     ${headerHtml}
-    <div class="stage-options" id="qOptions">
-      ${q.options.map((o) => `<button class="ds-option" data-key="${o.key}"><span class="ds-option__key">${o.key}</span><span>${o.text}</span></button>`).join('')}
-    </div>
-    <button class="ds-btn ds-btn--primary ds-btn--block" id="qSubmit" style="margin-top:18px" disabled>ส่งคำตอบ</button>
-    <p class="q-hint ds-muted ds-center" id="qHint">💭 คิดก่อนตอบ — คุณภาพการตัดสินใจสำคัญกว่าความเร็ว</p>`;
+    <div class="qx-tiles" id="qOptions">${q.options.map((o, i) => tile(o, i)).join('')}</div>
+    <button class="ds-btn ds-btn--primary ds-btn--block qx-send" id="qSubmit" disabled>เลือกคำตอบก่อน</button>
+    <p class="q-hint ds-muted ds-center" id="qHint">คิดให้ดี — แต่ยิ่งตอบเร็ว ยิ่งได้คะแนนเยอะ</p>`;
 
   let choice = null;
-  const opts = [...container.querySelectorAll('.ds-option')];
+  const opts = [...container.querySelectorAll('.qx-tile')];
   const submit = container.querySelector('#qSubmit');
-  opts.forEach((b) => b.addEventListener('click', () => { choice = b.dataset.key; opts.forEach((x) => x.classList.toggle('is-selected', x === b)); submit.disabled = false; }));
-  submit.addEventListener('click', () => doSubmit(ctx, submit, () => ({ choice, isCorrect: choice === q.correct }), () => submittedBox(container, `คำตอบของคุณ: <b class="ds-pid">${choice}</b>`)));
-  startTimer(session, () => softLock(container, () => getSubmitted()[subKey(ctx, q.id)]));
+  opts.forEach((b) => b.addEventListener('click', () => {
+    choice = b.dataset.key;
+    opts.forEach((x) => x.classList.toggle('is-selected', x === b));
+    submit.disabled = false;
+    submit.textContent = 'ส่งคำตอบ';
+  }));
+  submit.addEventListener('click', () => doSubmit(ctx, submit,
+    () => ({ choice, isCorrect: choice === q.correct }),
+    () => submittedBox(ctx, `คำตอบของคุณคือ <b>${esc(labelOf(q, choice))}</b>`)));
+  startTimer(ctx, () => softLock(ctx));
 }
 
 function lockedChoice(ctx, headerHtml) {
   const { container, q, sub } = ctx;
-  container.innerHTML = `<div class="q-head"><span class="ds-chip">ล็อกคำตอบแล้ว</span></div>${headerHtml}
-    <div class="stage-options">${q.options.map((o) => optionRow(o, { selected: sub && sub.choice === o.key })).join('')}</div>
+  container.innerHTML = `${qxHead(ctx, 'ล็อกคำตอบแล้ว', { live: false })}${headerHtml}
+    <div class="qx-tiles">${q.options.map((o, i) => tile(o, i, { static: true, selected: sub && sub.choice === o.key, faded: sub && sub.choice !== o.key })).join('')}</div>
     <p class="ds-muted ds-center" style="margin-top:14px">รอวิทยากรเฉลย…</p>`;
 }
 function revealedChoice(ctx, headerHtml) {
   const { container, q, sub } = ctx;
-  const right = sub && sub.choice === q.correct;
-  container.innerHTML = `<div class="q-head"><span class="ds-chip">เฉลย</span></div>${headerHtml}
-    <div class="stage-options">${q.options.map((o) => optionRow(o, { correct: o.key === q.correct, wrong: sub && sub.choice === o.key && o.key !== q.correct, selected: sub && sub.choice === o.key })).join('')}</div>
+  const right = !!(sub && sub.choice === q.correct);
+  container.innerHTML = `${resultSplash(ctx, sub, right)}
+    ${qxHead(ctx, 'เฉลย', { live: false })}${headerHtml}
+    <div class="qx-tiles">${q.options.map((o, i) => tile(o, i, {
+      static: true,
+      correct: o.key === q.correct,
+      wrong: !!(sub && sub.choice === o.key && o.key !== q.correct),
+      faded: o.key !== q.correct && !(sub && sub.choice === o.key),
+    })).join('')}</div>
     ${resultBanner(sub, right, q)}`;
+}
+/** Big win/miss splash with the XP actually earned. */
+function resultSplash(ctx, sub, right) {
+  const { q } = ctx;
+  const none = !sub;
+  const rules = (ctx.content && ctx.content.xpRules) || {};
+  const gained = right
+    ? xpForAnswer(q, sub, rules, (ctx.session.questionDuration || 45) * 1000)
+    : 0;
+  const kind = none ? 'miss' : right ? 'win' : 'lose';
+  const art = none ? 'clock' : right ? 'trophy' : 'brain';
+  const title = none ? 'ไม่ได้ตอบข้อนี้' : right ? 'ตอบถูก!' : 'ยังไม่ใช่คำตอบที่ดีที่สุด';
+  const line = none ? 'ไม่เป็นไร ข้อต่อไปเอาใหม่'
+    : right ? `+${fmtXp(sub.xp != null ? sub.xp : gained)} XP`
+    : 'อ่านเฉลยด้านล่าง แล้วไปต่อกัน';
+  return `<div class="qx-splash qx-splash--${kind}">
+    ${mascot(art, { size: 92 })}
+    <div><h3>${title}</h3><p>${line}</p></div>
+  </div>`;
+}
+function labelOf(q, key) {
+  const o = (q.options || []).find((x) => x.key === key);
+  return o ? o.text : key;
 }
 function investigationHeader(q) {
   return `<div class="news-card">
@@ -139,14 +252,14 @@ function investigationHeader(q) {
 function renderDragsort(ctx) {
   const { container, session, q, sub } = ctx;
   const phase = session.phase;
-  if (phase === 'question_open' && sub) return submittedBox(container, 'ส่งคำตอบเรียงการ์ดแล้ว');
+  if (phase === 'question_open' && sub) return submittedBox(ctx, 'ส่งคำตอบจับคู่การ์ดแล้ว');
   if (phase === 'locked') return dragReview(ctx, false);
   if (phase === 'revealed') return dragReview(ctx, true);
 
   const assign = {}; // cardId -> bucketKey
   let picked = null;
   container.innerHTML = `
-    <div class="q-head"><span class="ds-chip ds-chip--live">ลากการ์ด (แตะ)</span><span class="ds-timer q-timer" id="qTimer">--:--</span></div>
+    ${qxHead(ctx, 'จับคู่ลงกล่อง')}
     <p class="q-situation">${q.prompt}</p>
     <p class="q-hint ds-muted">แตะการ์ด 1 ใบ แล้วแตะกล่องที่ต้องการ · แตะการ์ดในกล่องเพื่อเอากลับ</p>
     <div class="pool" id="pool">${q.cards.map((c) => cardChip(c)).join('')}</div>
@@ -178,9 +291,9 @@ function renderDragsort(ctx) {
   });
   submit.addEventListener('click', () => {
     const isCorrect = q.cards.every((c) => assign[c.id] === c.correct);
-    doSubmit(ctx, submit, () => ({ choice: assign, isCorrect }), () => submittedBox(container, 'ส่งคำตอบเรียงการ์ดแล้ว'));
+    doSubmit(ctx, submit, () => ({ choice: assign, isCorrect }), () => submittedBox(ctx, 'ส่งคำตอบจับคู่การ์ดแล้ว'));
   });
-  startTimer(session, () => softLock(container, () => getSubmitted()[subKey(ctx, q.id)]));
+  startTimer(ctx, () => softLock(ctx));
 }
 function cardChip(c) { return `<button class="card-chip" data-card="${c.id}">${c.text}</button>`; }
 function dragReview(ctx, reveal) {
@@ -193,9 +306,9 @@ function dragReview(ctx, reveal) {
       const bucket = q.buckets.find((b) => b.key === c.correct);
       return `<div class="review-row ${reveal ? (ok ? 'is-correct' : 'is-wrong') : ''}">
         <span>${c.text}</span>
-        <span class="review-row__ans">${reveal ? `${ok ? '✓' : '✕'} ${bucket ? bucket.labelTh : c.correct}` : (q.buckets.find((b) => b.key === mine)?.labelTh || '—')}</span></div>`;
+        <span class="review-row__ans">${reveal ? `${icon(ok ? 'check' : 'close')} ${bucket ? bucket.labelTh : c.correct}` : (q.buckets.find((b) => b.key === mine)?.labelTh || '—')}</span></div>`;
     }).join('')}</div>
-    ${reveal ? `<div class="ds-alert ${sub && q.cards.every((c) => assign[c.id] === c.correct) ? 'ds-alert--ok' : 'ds-alert--warn'}" style="margin-top:14px"><span>ℹ︎</span><div><span class="ds-muted">${q.explanation}</span></div></div>` : '<p class="ds-muted ds-center" style="margin-top:12px">รอวิทยากรเฉลย…</p>'}`;
+    ${reveal ? `<div class="ds-alert ${sub && q.cards.every((c) => assign[c.id] === c.correct) ? 'ds-alert--ok' : 'ds-alert--warn'}" style="margin-top:14px"><span>${icon('bulb')}</span><div><span class="ds-muted">${q.explanation}</span></div></div>` : '<p class="ds-muted ds-center" style="margin-top:12px">รอวิทยากรเฉลย…</p>'}`;
 }
 
 /* =====================================================================
@@ -204,14 +317,14 @@ function dragReview(ctx, reveal) {
 function renderOrdering(ctx) {
   const { container, session, q, sub } = ctx;
   const phase = session.phase;
-  if (phase === 'question_open' && sub) return submittedBox(container, 'ส่งลำดับการตัดสินใจแล้ว');
+  if (phase === 'question_open' && sub) return submittedBox(ctx, 'ส่งลำดับการตัดสินใจแล้ว');
   if (phase === 'locked') return orderReview(ctx, false);
   if (phase === 'revealed') return orderReview(ctx, true);
 
   const shuffled = [...q.steps].sort(() => Math.random() - 0.5);
   const order = [];
   container.innerHTML = `
-    <div class="q-head"><span class="ds-chip ds-chip--live">เรียงลำดับ</span><span class="ds-timer q-timer" id="qTimer">--:--</span></div>
+    ${qxHead(ctx, 'เรียงลำดับ')}
     <p class="q-situation">${q.scenario}</p>
     <p class="q-hint ds-muted">แตะขั้นตอนตามลำดับที่คุณคิดว่าถูก · แตะในลำดับเพื่อเอาออก</p>
     <div class="order-seq" id="orderSeq"></div>
@@ -228,9 +341,9 @@ function renderOrdering(ctx) {
   seq.addEventListener('click', (e) => { const b = e.target.closest('[data-rem]'); if (!b) return; const id = b.dataset.rem; order.splice(order.indexOf(id), 1); const pb = pool.querySelector(`[data-step="${id}"]`); if (pb) pb.style.visibility = 'visible'; redraw(); });
   submit.addEventListener('click', () => {
     const isCorrect = order.length === q.correctOrder.length && order.every((id, i) => id === q.correctOrder[i]);
-    doSubmit(ctx, submit, () => ({ choice: order, isCorrect }), () => submittedBox(container, 'ส่งลำดับการตัดสินใจแล้ว'));
+    doSubmit(ctx, submit, () => ({ choice: order, isCorrect }), () => submittedBox(ctx, 'ส่งลำดับการตัดสินใจแล้ว'));
   });
-  startTimer(session, () => softLock(container, () => getSubmitted()[subKey(ctx, q.id)]));
+  startTimer(ctx, () => softLock(ctx));
 }
 function orderReview(ctx, reveal) {
   const { container, q, sub } = ctx;
@@ -239,7 +352,7 @@ function orderReview(ctx, reveal) {
   container.innerHTML = `<div class="q-head"><span class="ds-chip">${reveal ? 'เฉลย' : 'ล็อกแล้ว'}</span></div>
     <p class="q-situation">${q.scenario}</p>
     <div class="order-seq">${(reveal ? q.correctOrder : mine).map((id, i) => { const st = q.steps.find((s) => s.id === id); return `<div class="card-chip"><b>${i + 1}.</b> ${st ? st.text : id}</div>`; }).join('')}</div>
-    ${reveal ? `<div class="ds-alert ${right ? 'ds-alert--ok' : 'ds-alert--warn'}" style="margin-top:14px"><span>${right ? '✓' : 'ℹ︎'}</span><div><strong>${right ? 'เรียงถูกต้อง! 🎉' : 'ลำดับที่ดีที่สุด (ด้านบน)'}</strong><br><span class="ds-muted">${q.explanation}</span></div></div>` : '<p class="ds-muted ds-center" style="margin-top:12px">รอวิทยากรเฉลย…</p>'}`;
+    ${reveal ? `<div class="ds-alert ${right ? 'ds-alert--ok' : 'ds-alert--warn'}" style="margin-top:14px"><span>${icon(right ? 'check' : 'bulb')}</span><div><strong>${right ? 'เรียงถูกต้อง!' : 'ลำดับที่ดีที่สุด (ด้านบน)'}</strong><br><span class="ds-muted">${q.explanation}</span></div></div>` : '<p class="ds-muted ds-center" style="margin-top:12px">รอวิทยากรเฉลย…</p>'}`;
 }
 
 /* =====================================================================
@@ -251,7 +364,7 @@ function renderAssessment(ctx) {
 
   const answers = {};
   container.innerHTML = `
-    <div class="q-head"><span class="ds-chip ds-chip--live">ประเมินตนเอง</span></div>
+    ${qxHead(ctx, 'ประเมินตนเอง', { live: false })}
     <p class="q-situation">${q.prompt}</p>
     <div class="assess">${q.statements.map((s) => `
       <div class="assess__row" data-sid="${s.id}">
@@ -286,7 +399,7 @@ function assessmentResult(ctx, answers) {
     <div class="ds-alert" style="margin-top:16px"><span>${icon('balance')}</span><div><span class="ds-muted">${q.explanation}</span></div></div>
     <p class="ds-muted ds-center" style="margin-top:10px">${tips(dims)}</p>`;
 }
-function balanceWord(b) { return b >= 70 ? 'สมดุลดีมาก 👍' : b >= 45 ? 'พอใช้ ปรับได้อีกนิด' : 'ลองปรับสมดุลการใช้ดิจิทัลดูนะ'; }
+function balanceWord(b) { return b >= 70 ? 'สมดุลดีมาก' : b >= 45 ? 'พอใช้ ปรับได้อีกนิด' : 'ลองปรับสมดุลการใช้ดิจิทัลดูนะ'; }
 function tips(dims) {
   const worst = Object.keys(dims).sort((a, b) => (dims[b].sum / dims[b].count) - (dims[a].sum / dims[a].count))[0];
   const map = { focus: 'ลองตั้งเวลาพักจากมือถือ และปิดแจ้งเตือนที่ไม่จำเป็น', wellbeing: 'ลองงดจอ 1 ชม.ก่อนนอน เพื่อการนอนที่ดีขึ้น', safety: 'ตั้งรหัสผ่านที่ต่างกันในแต่ละบัญชี และตรวจก่อนกดลิงก์', privacy: 'ตรวจการตั้งค่าความเป็นส่วนตัว และคิดก่อนแชร์ข้อมูลส่วนตัว' };
@@ -301,48 +414,84 @@ async function doSubmit(ctx, submit, build, onDone) {
   submit.disabled = true; submit.textContent = 'กำลังส่ง…';
   const { choice, isCorrect } = build();
   const responseMs = Math.max(0, Date.now() - numTime(session.questionStartAt));
-  try {
-    await submitAnswer(ctx.stored, { questionId: q.id, missionId: q.missionId, choice, isCorrect, responseMs });
-  } catch (_e) { /* offline → queued by persistence */ }
-  markSubmitted(subKey(ctx, q.id), choice, isCorrect);
-  onDone();
+  if (!ctx.solo) {
+    try {
+      await submitAnswer(ctx.stored, { questionId: q.id, missionId: q.missionId, choice, isCorrect, responseMs });
+    } catch (_e) { /* offline → queued by persistence */ }
+  }
+  markSubmitted(ctx, subKey(ctx, q.id), choice, isCorrect, responseMs);
+  ctx.sub = { choice, isCorrect, responseMs };
+  // Solo play has no host to wait for: jump straight to the reveal.
+  if (ctx.solo && ctx.onAnswer) ctx.onAnswer({ choice, isCorrect, responseMs });
+  else onDone();
 }
-function submittedBox(container, line) {
-  container.innerHTML = `<div class="ds-empty"><span class="ds-feat ds-feat--electric ds-ico--lg">${icon('reveal')}</span>
-    <h3>ส่งคำตอบแล้ว ✓</h3><p>${line}</p><p class="ds-muted">รอเพื่อนๆ ตอบให้ครบ แล้ววิทยากรจะเฉลย</p></div>`;
-}
-function optionRow(o, st) {
-  const cls = ['ds-option', st.selected ? 'is-selected' : '', st.correct ? 'is-correct' : '', st.wrong ? 'is-wrong' : ''].join(' ').replace(/\s+/g, ' ').trim();
-  const mark = st.correct ? ' <span style="margin-left:auto;color:var(--success)">✓</span>' : (st.wrong ? ' <span style="margin-left:auto;color:var(--danger)">✕</span>' : '');
-  return `<div class="${cls}" style="pointer-events:none"><span class="ds-option__key">${o.key}</span><span>${o.text}</span>${mark}</div>`;
+function submittedBox(ctx, line) {
+  const container = ctx.container || ctx;
+  container.innerHTML = `<div class="qx-wait">
+    ${mascot('rocket', { size: 120 })}
+    <h3>ส่งคำตอบแล้ว</h3>
+    <p>${line}</p>
+    <div class="qx-dots"><i></i><i></i><i></i></div>
+    <p class="ds-muted">รอเพื่อนๆ ตอบให้ครบ แล้ววิทยากรจะเฉลย</p></div>`;
 }
 function resultBanner(sub, right, q) {
-  return `<div class="ds-alert ${right ? 'ds-alert--ok' : 'ds-alert--warn'}" style="margin-top:16px"><span>${right ? '✓' : 'ℹ︎'}</span>
-    <div><strong>${sub ? (right ? 'ตอบถูก! 🎉' : 'ยังไม่ใช่คำตอบที่ดีที่สุด') : 'เฉลย'}</strong><br><span class="ds-muted">${q.explanation || ''}</span></div></div>
-    ${sub ? `<p class="ds-muted ds-center" style="margin-top:12px">คำตอบที่ดีที่สุดคือ <b class="ds-pid">${q.correct}</b>${right ? ` · +${q.xp || 100} XP` : ''}</p>` : ''}`;
+  return `<div class="ds-alert ${right ? 'ds-alert--ok' : 'ds-alert--warn'}" style="margin-top:16px"><span>${icon(right ? 'check' : 'bulb')}</span>
+    <div><strong>ทำไมถึงเป็นแบบนั้น</strong><br><span class="ds-muted">${q.explanation || ''}</span></div></div>`;
 }
 function notReady() {
-  return `<div class="ds-empty"><span class="ds-feat ds-feat--electric ds-ico--lg">${icon('search')}</span><h3>เตรียมคำถาม…</h3><p>วิทยากรกำลังเปิดคำถาม รอสักครู่</p></div>`;
+  return `<div class="qx-wait">${mascot('owl', { size: 130 })}
+    <h3>เตรียมคำถาม…</h3><p class="ds-muted">วิทยากรกำลังเปิดคำถาม รอสักครู่</p>
+    <div class="qx-dots"><i></i><i></i><i></i></div></div>`;
 }
-function softLock(container, isSubmitted) {
-  if (isSubmitted()) return;
+function softLock(ctx) {
+  const container = ctx.container;
+  if (getSubmitted(ctx)[subKey(ctx, ctx.q.id)]) return;
   const submit = container.querySelector('#qSubmit'); if (submit) submit.disabled = true;
   const hint = container.querySelector('#qHint'); if (hint) { hint.textContent = 'หมดเวลา — รอวิทยากรเฉลย'; hint.style.color = 'var(--danger)'; }
-  container.querySelectorAll('.ds-option, .card-chip, .assess__opt, .bucket__drop').forEach((x) => (x.style.pointerEvents = 'none'));
+  const send = container.querySelector('#qSubmit'); if (send) send.textContent = 'หมดเวลาแล้ว';
+  if (ctx.solo && ctx.onTimeout) ctx.onTimeout();
+  container.querySelectorAll('.qx-tile, .ds-option, .card-chip, .assess__opt, .bucket__drop').forEach((x) => (x.style.pointerEvents = 'none'));
 }
-function startTimer(session, onZero) {
-  const el0 = document.getElementById('qTimer');
-  if (session.questionDuration === 0) { if (el0) el0.textContent = '∞'; return; } // ไม่จำกัดเวลา — ไม่ล็อกอัตโนมัติ
+/** Countdown ring + a live XP number that drains as the clock runs, so the
+    "ยิ่งเร็วยิ่งได้เยอะ" rule is something students can literally watch. */
+function startTimer(ctx, onZero) {
+  const session = ctx.session || ctx;
+  const rules = (ctx.content && ctx.content.xpRules) || {};
+  const base = ctx.q ? maxXp(ctx) : 0;
+  const unlimited = session.questionDuration === 0;
   const start = numTime(session.questionStartAt);
-  const dur = (session.questionDuration || 30) * 1000;
+  const dur = (unlimited ? 60 : (session.questionDuration || 45)) * 1000;
+
+  const paintXp = (usedMs) => {
+    const el = document.getElementById('qXpNow');
+    if (!el || !base) return;
+    const now = Math.round(base * speedFactor(usedMs, dur, rules));
+    el.textContent = `+${fmtXp(now)} XP`;
+    el.classList.toggle('is-low', now <= base * 0.55);
+  };
+
+  const ring = document.getElementById('qTimer');
+  if (unlimited) {
+    if (ring) { ring.innerHTML = '<b>∞</b>'; ring.style.setProperty('--p', '100%'); }
+    paintXp(Date.now() - start);
+    timerIv = setInterval(() => paintXp(Date.now() - start), 1000);
+    return;
+  }
+
   let fired = false;
   const tick = () => {
-    const left = Math.max(0, Math.ceil((start + dur - Date.now()) / 1000));
+    const used = Date.now() - start;
+    const left = Math.max(0, Math.ceil((dur - used) / 1000));
     const el = document.getElementById('qTimer');
-    if (el) { const m = Math.floor(left / 60), s = left % 60; el.textContent = `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`; el.classList.toggle('is-low', left <= 10); }
+    if (el) {
+      el.innerHTML = `<b>${left}</b>`;
+      el.style.setProperty('--p', `${Math.max(0, Math.min(100, ((dur - used) / dur) * 100))}%`);
+      el.classList.toggle('is-low', left <= 10);
+    }
+    paintXp(used);
     if (left <= 0 && !fired) { fired = true; onZero && onZero(); if (timerIv) { clearInterval(timerIv); timerIv = null; } }
   };
-  tick(); timerIv = setInterval(tick, 500);
+  tick(); timerIv = setInterval(tick, 250);
 }
 
 /* evidence reveal (delegated globally since header is re-rendered) */

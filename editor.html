@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>แก้ไขชุดคำถาม · JDKS Arena</title>
+  <meta name="theme-color" content="#4F46E5">
+  <script>try{document.documentElement.setAttribute('data-theme',localStorage.getItem('ds-theme')||'light')}catch(e){document.documentElement.setAttribute('data-theme','light')}</script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Kanit:wght@500;600;700&family=Sarabun:wght@400;600;700&family=JetBrains+Mono:wght@600;700&display=swap">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/arena.css">
+  <link rel="stylesheet" href="css/admin.css">
+</head>
+<body>
+  <header class="jx-top">
+    <a class="jx-logo" href="teacher.html">
+      <span class="jx-logo__mark">JA</span>
+      <span class="jx-logo__name">JDKS <b>Arena</b><span class="jx-logo__tag">แก้ไขชุดคำถาม</span></span>
+    </a>
+    <div class="jx-top__spacer"></div>
+    <span class="jx-chip" id="saveState">—</span>
+    <button class="ds-iconbtn" data-role="theme-toggle" type="button" aria-label="สลับธีม">
+      <span class="icon-sun" data-icon="sun"></span><span class="icon-moon" data-icon="moon"></span>
+    </button>
+    <a class="ds-btn ds-btn--ghost" href="teacher.html">กลับแผง</a>
+  </header>
+
+  <main class="jx-wrap" id="main">
+    <div class="jx-empty"><div class="jx-empty__ic" data-icon="clock"></div><h3>กำลังโหลดชุดคำถาม…</h3></div>
+  </main>
+
+  <div class="jx-savebar" id="savebar" hidden>
+    <span class="jx-savebar__msg" id="saveMsg">มีการแก้ไขที่ยังไม่บันทึก</span>
+    <a class="ds-btn ds-btn--ghost" id="playBtn" href="#">ทดลองเปิดห้อง</a>
+    <button class="ds-btn ds-btn--primary" id="saveBtn" type="button">บันทึก</button>
+  </div>
+
+<script type="module" src="js/ui.js"></script>
+<script type="module" src="js/editor.js"></script>
+</body>
+</html>

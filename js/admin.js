@@ -1,9 +1,10 @@
 /* =================================================================
-   Admin controller (admin.html) — DIGITAL SURVIVAL (§6, §31, §32)
+   Admin controller (admin.html) — JDKS ARENA (§6, §31, §32)
    Sessions list · analytics · CSV/XLSX export · close/archive.
    Read-only content overview (content is edited in data/*.json).
    ================================================================= */
 import { onAuth, signInStaff, getRole, authErrorTh, signOutUser } from './auth.js';
+import { dxConfirm, toast } from './dialog.js';
 import { startIdleTimer } from './idle.js';
 import { getSessions, getSessionUsers, getSessionAnswers, setSessionStatus, archiveSession, deleteSessionFully, saveSettings } from './session.js';
 import { loadContent, loadQuestions } from './content.js';
@@ -71,17 +72,17 @@ async function refreshSessions() {
   hydrateIcons(box);
   box.querySelectorAll('[data-pick]').forEach((b) => b.addEventListener('click', () => selectSession(b.dataset.pick)));
   box.querySelectorAll('[data-close]').forEach((b) => b.addEventListener('click', async () => { await setSessionStatus(b.dataset.close, 'closed').catch(() => {}); refreshSessions(); }));
-  box.querySelectorAll('[data-arch]').forEach((b) => b.addEventListener('click', async () => { if (confirm('เก็บถาวรเซสชันนี้?')) { await archiveSession(b.dataset.arch).catch(() => {}); refreshSessions(); } }));
+  box.querySelectorAll('[data-arch]').forEach((b) => b.addEventListener('click', async () => { if (await dxConfirm({ title: 'เก็บถาวรเซสชันนี้?', message: 'ห้องจะถูกย้ายไปกลุ่มที่เก็บถาวร', ok: 'เก็บถาวร', cancel: 'ยกเลิก' })) { await archiveSession(b.dataset.arch).catch(() => {}); refreshSessions(); } }));
   box.querySelectorAll('[data-del]').forEach((b) => b.addEventListener('click', async () => {
     const s = state.sessions.find((x) => x.id === b.dataset.del);
-    if (s && s.status === 'open') { alert('ปิดเซสชันก่อนจึงจะลบได้ (กันลบห้องที่กำลังใช้งาน)'); return; }
-    if (!confirm(`ลบเซสชัน ${s ? s.code : ''} ถาวร?\nจะลบข้อมูลผู้เล่น คำตอบ และคะแนนทั้งหมดของเซสชันนี้ กู้คืนไม่ได้`)) return;
+    if (s && s.status === 'open') { toast('ปิดเซสชันก่อนจึงจะลบได้ (กันลบห้องที่กำลังใช้งาน)', 'error'); return; }
+    if (!await dxConfirm({ title: `ลบเซสชัน ${s ? s.code : ''} ถาวร?`, message: 'จะลบข้อมูลผู้เล่น คำตอบ และคะแนนทั้งหมดของเซสชันนี้ กู้คืนไม่ได้', ok: 'ลบถาวร', cancel: 'ยกเลิก', danger: true })) return;
     b.disabled = true; b.textContent = 'กำลังลบ…';
     try {
       await deleteSessionFully(b.dataset.del);
       if (state.active && state.active.id === b.dataset.del) { state.active = null; state.users = []; state.answers = []; }
       refreshSessions();
-    } catch (e) { alert('ลบไม่สำเร็จ: ' + (e.message || e) + '\n(ผู้ดูแลต้องอัปเดต Firestore Rules ให้ลบ answers ได้)'); b.disabled = false; b.textContent = 'ลบ'; }
+    } catch (e) { toast('ลบไม่สำเร็จ: ' + (e.message || e), 'error'); b.disabled = false; b.textContent = 'ลบ'; }
   }));
 }
 function sessRow(s) {
@@ -104,7 +105,7 @@ async function selectSession(id) {
   try {
     [state.users, state.answers] = await Promise.all([getSessionUsers(id), getSessionAnswers(id)]);
     state.analytics = computeAnalytics(state.users, state.answers, state.content, state.questions);
-  } catch (e) { alert('โหลดข้อมูลไม่สำเร็จ: ' + (e.message || e)); return; }
+  } catch (e) { toast('โหลดข้อมูลไม่สำเร็จ: ' + (e.message || e), 'error'); return; }
   renderAnalytics(); renderExport(); refreshSessions();
   if (goAnalytics) goAnalytics.click();
 }
@@ -157,8 +158,8 @@ function renderExport() {
       <p class="ds-note" style="display:block;margin-top:16px">CSV มี BOM รองรับภาษาไทยใน Excel · XLSX โหลด SheetJS จาก CDN เฉพาะตอนกด</p>
     </div>`;
   const name = `digital-survival-${state.active.code}`;
-  $('#expCsv').addEventListener('click', () => { try { exportCSV(state.users, state.content, name); } catch (e) { alert('ส่งออก CSV ไม่สำเร็จ: ' + e.message); } });
-  $('#expXlsx').addEventListener('click', async () => { const b = $('#expXlsx'); b.disabled = true; b.textContent = 'กำลังสร้าง…'; try { await exportXLSX(state.users, state.content, name); } catch (e) { alert('ส่งออก XLSX ไม่สำเร็จ: ' + (e.message || e)); } b.disabled = false; b.innerHTML = icon('chart') + ' ดาวน์โหลด XLSX'; });
+  $('#expCsv').addEventListener('click', () => { try { exportCSV(state.users, state.content, name); } catch (e) { toast('ส่งออก CSV ไม่สำเร็จ: ' + e.message, 'error'); } });
+  $('#expXlsx').addEventListener('click', async () => { const b = $('#expXlsx'); b.disabled = true; b.textContent = 'กำลังสร้าง…'; try { await exportXLSX(state.users, state.content, name); } catch (e) { toast('ส่งออก XLSX ไม่สำเร็จ: ' + (e.message || e), 'error'); } b.disabled = false; b.innerHTML = icon('chart') + ' ดาวน์โหลด XLSX'; });
 }
 
 /* ---------------- content overview ---------------- */
@@ -226,11 +227,11 @@ function onField(e) {
   let v = el.value; if (el.dataset.num) v = Number(v) || 0;
   setPath(qmodel[qid], path, v);
 }
-function onListClick(e) {
+async function onListClick(e) {
   const add = e.target.closest('[data-addopt]'); const del = e.target.closest('[data-delopt]'); const dq = e.target.closest('[data-delq]');
   if (add) { const q = qmodel[add.dataset.addopt]; const used = (q.options || []).map((o) => o.key); const key = 'ABCDEFGH'.split('').find((k) => !used.includes(k)) || String(used.length + 1); q.options.push({ key, text: '' }); renderQList(); }
   else if (del) { const [qid, i] = del.dataset.delopt.split(':'); const q = qmodel[qid]; const removed = q.options[+i]; q.options.splice(+i, 1); if (q.correct === removed.key) q.correct = (q.options[0] || {}).key || ''; renderQList(); }
-  else if (dq) { if (confirm('ลบคำถามนี้?')) { renumberDelete(dq.dataset.delq); renderQList(); } }
+  else if (dq) { if (await dxConfirm({ title: 'ลบคำถามนี้?', message: 'ลบแล้วกู้คืนไม่ได้', ok: 'ลบคำถาม', cancel: 'ยกเลิก', danger: true })) { renumberDelete(dq.dataset.delq); renderQList(); } }
 }
 
 function renderQList() {

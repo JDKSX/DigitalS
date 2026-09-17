@@ -3,10 +3,15 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>จอฉาย · DIGITAL SURVIVAL</title>
-  <meta name="theme-color" content="#070E1C">
+  <title>จอฉาย · JDKS Arena</title>
+  <meta name="theme-color" content="#7C3AED">
   <script>try{document.documentElement.setAttribute('data-theme',localStorage.getItem('ds-theme')||'dark')}catch(e){document.documentElement.setAttribute('data-theme','dark')}</script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Kanit:wght@500;600;700&family=Sarabun:wght@400;600;700&family=JetBrains+Mono:wght@600;700&display=swap">
   <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/arena.css">
+  <link rel="stylesheet" href="css/arena-game.css">
   <link rel="stylesheet" href="css/presenter.css">
 </head>
 <body class="presenter">
@@ -16,22 +21,23 @@
 
   <main class="presenter__stage ds-layer" id="stage" aria-live="polite">
     <p class="ds-en presenter__eyebrow">กำลังเชื่อมต่อ…</p>
-    <h1 class="presenter__title"><span class="ds-ai-text">DIGITAL SURVIVAL</span></h1>
+    <h1 class="presenter__title"><span class="ds-ai-text">JDKS Arena</span></h1>
   </main>
 
   <!-- Fixed controls (small, corner) -->
   <div class="presenter__ctrls">
-    <button class="ds-iconbtn snd-btn is-off" id="bgBtn" type="button" aria-label="เปิด/ปิดเพลงประกอบ" title="เพลงประกอบ (BG)">🎵</button>
-    <button class="ds-iconbtn snd-btn is-off" id="sfxBtn" type="button" aria-label="เปิด/ปิดเสียงเอฟเฟกต์" title="เสียงเอฟเฟกต์ (SFX)">🔔</button>
+    <button class="ds-iconbtn snd-btn is-off" id="bgBtn" type="button" aria-label="เปิด/ปิดเพลงประกอบ" title="เพลงประกอบ (BG)"><span data-icon="music"></span></button>
+    <button class="ds-iconbtn snd-btn is-off" id="sfxBtn" type="button" aria-label="เปิด/ปิดเสียงเอฟเฟกต์" title="เสียงเอฟเฟกต์ (SFX)"><span data-icon="bell"></span></button>
     <button class="ds-iconbtn presenter__toggle" data-role="theme-toggle" type="button" aria-label="สลับธีมสว่าง/มืด">
       <span class="icon-sun" data-icon="sun"></span><span class="icon-moon" data-icon="moon"></span>
     </button>
   </div>
 
   <!-- One-time hint to enable sound (autoplay policy) -->
-  <div class="sound-hint" id="soundHint">🔊 คลิก 🎵 / 🔔 เพื่อเปิดเสียง</div>
+  <div class="sound-hint" id="soundHint"><span data-icon="speaker"></span> เปิดเสียงประกอบได้ที่ปุ่มมุมขวาบน</div>
 
 <script type="module" src="js/ui.js"></script>
+<script type="module" src="js/mascot.js"></script>
 <script type="module" src="js/presenter.js"></script>
 </body>
 </html>

@@ -3,66 +3,135 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>DIGITAL SURVIVAL — เอาตัวรอดในโลกดิจิทัล</title>
-  <meta name="description" content="8 ภารกิจ ฝึกคิด ตัดสินใจ และรับผิดชอบบนโลกออนไลน์">
-  <meta name="theme-color" content="#070E1C">
-  <script>try{document.documentElement.setAttribute('data-theme',localStorage.getItem('ds-theme')||'dark')}catch(e){document.documentElement.setAttribute('data-theme','dark')}</script>
+  <title>JDKS Arena — เปลี่ยนห้องเรียนให้เป็นสนามแข่ง</title>
+  <meta name="description" content="แพลตฟอร์มเกมการเรียนรู้สด เล่นพร้อมกันทั้งห้อง สร้างชุดคำถามของคุณเองได้ทุกวิชา">
+  <meta name="theme-color" content="#4F46E5">
+  <script>try{document.documentElement.setAttribute('data-theme',localStorage.getItem('ds-theme')||'light')}catch(e){document.documentElement.setAttribute('data-theme','light')}</script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Kanit:wght@500;600;700&family=Sarabun:wght@400;600;700&family=JetBrains+Mono:wght@600;700&display=swap">
   <link rel="stylesheet" href="css/style.css">
-  <link rel="stylesheet" href="css/landing.css">
+  <link rel="stylesheet" href="css/arena.css">
 </head>
 <body>
-<div class="app-shell">
-  <header class="app-header">
-    <a class="brand" href="index.html">
-      <span class="brand__logo"><span data-icon="shield"></span></span>
-      <span class="brand__txt"><b>DIGITAL SURVIVAL</b><small>เอาตัวรอดในโลกดิจิทัล</small></span>
-    </a>
-    <div class="app-header__right">
-      <button class="ds-iconbtn" data-role="theme-toggle" type="button" aria-label="สลับธีมสว่าง/มืด" title="สลับธีม">
-        <span class="icon-sun" data-icon="sun"></span><span class="icon-moon" data-icon="moon"></span>
-      </button>
-    </div>
-  </header>
+  <div class="ds-gridbg" aria-hidden="true"></div>
+  <div class="ds-orb" style="top:-160px;right:4%" aria-hidden="true"></div>
+  <div class="ds-orb ds-orb--violet" style="bottom:-200px;left:-4%" aria-hidden="true"></div>
 
-  <main class="app-main">
-    <section class="landing-hero">
-      <div class="ds-gridbg"></div>
-      <div class="ds-orb" style="top:-120px;right:6%"></div>
-      <div class="ds-orb ds-orb--violet" style="bottom:-160px;left:-4%"></div>
+  <header class="jx-top" data-topbar data-active="home"></header>
 
-      <div class="cube-scene" aria-hidden="true">
-        <div class="cube"><div class="cf"></div><div class="cf"></div><div class="cf"></div><div class="cf"></div><div class="cf"></div><div class="cf"></div></div>
+  <main class="jx-wrap">
+    <section class="jx-hero">
+      <div class="jx-hero__art">
+        <span data-mascot="owl" data-size="150" class="mx-pop"></span>
+        <span data-mascot="rocket" data-size="86" class="jx-float jx-float--a jx-hide-sm"></span>
+        <span data-mascot="trophy" data-size="78" class="jx-float jx-float--b jx-hide-sm"></span>
+      </div>
+      <p class="jx-eyebrow">Live Learning Arena</p>
+      <h1 class="jx-hero__title">เปลี่ยนห้องเรียน<br>ให้เป็น<em>สนามแข่ง</em></h1>
+      <p class="jx-hero__sub">
+        เกมตอบคำถามสด เล่นพร้อมกันได้ทั้งห้องจากมือถือหรือแท็บเล็ต
+        ครูสร้างชุดคำถามของตัวเองได้ทุกวิชา — นักเรียนแค่กรอกรหัสแล้วเล่น
+      </p>
+
+      <div class="jx-join">
+        <label class="jx-join__label" for="joinCode">มีรหัสห้องแล้ว? กรอกเพื่อเข้าเล่นได้เลย</label>
+        <input id="joinCode" class="jx-code-input" maxlength="6" autocomplete="off"
+               autocapitalize="characters" inputmode="latin" placeholder="ABCDE">
+        <button class="ds-btn ds-btn--primary ds-btn--block" id="joinGo" type="button" style="margin-top:14px">
+          <span data-icon="play"></span> เข้าร่วมเกม
+        </button>
+        <p class="ds-muted" style="font-size:.82rem;margin:12px 0 0">ไม่ต้องสมัคร ไม่เก็บข้อมูลส่วนตัว — ใช้แค่ชื่อเล่น</p>
       </div>
 
-      <div class="landing-hero__in ds-layer ds-fade-up">
-        <p class="ds-en" style="color:var(--cyan)">Digital Literacy · AI-Aware · 8 Missions</p>
-        <h1 class="landing-title"><span class="ds-ai-text">เอาตัวรอด<br>ในโลกดิจิทัล</span></h1>
-        <p class="landing-sub">8 ภารกิจ ฝึกคิด วิเคราะห์ และตัดสินใจ<br>เมื่อเรื่องเหล่านี้เกิดขึ้นกับ <b>คุณ</b></p>
-        <p class="ds-en">8 Missions to Survive the Digital World</p>
-        <button class="ds-btn ds-btn--primary" id="enterBtn" type="button" style="margin-top:24px">
-          <span data-icon="play"></span> เข้าสู่ภารกิจ <small style="font-family:var(--font-mono);font-size:.62rem;opacity:.7;letter-spacing:.1em">ENTER</small>
-        </button>
+      <p class="jx-hero__or">ยังไม่มีรหัส? <a href="community.html">เลือกเกมจากคลังแล้วเล่นคนเดียวได้เลย</a></p>
+
+      <div class="jx-stats">
+        <div><div class="jx-stat__n">5</div><div class="jx-stat__l">รูปแบบคำถาม</div></div>
+        <div><div class="jx-stat__n">200+</div><div class="jx-stat__l">ผู้เล่นพร้อมกัน</div></div>
+        <div><div class="jx-stat__n">ทุกวิชา</div><div class="jx-stat__l">สร้างชุดเองได้</div></div>
       </div>
     </section>
 
-    <section class="landing-principles ds-wrap">
-      <div class="principle"><span class="ds-feat ds-feat--electric"><span data-icon="search"></span></span><b>คิดก่อนคลิก</b><span class="ds-en">Think before you click</span></div>
-      <div class="principle"><span class="ds-feat"><span data-icon="shield"></span></span><b>ตรวจสอบก่อนแชร์</b><span class="ds-en">Verify before you share</span></div>
-      <div class="principle"><span class="ds-feat ds-feat--violet"><span data-icon="chat"></span></span><b>รับผิดชอบก่อนโพสต์</b><span class="ds-en">Own it before you post</span></div>
+    <section class="jx-section">
+      <p class="jx-eyebrow">ทำอะไรได้บ้าง</p>
+      <h2 class="jx-h2">ออกแบบมาเพื่อห้องเรียนจริง</h2>
+      <p class="jx-lead">ผ่านการใช้งานจริงกับนักเรียนทั้งระดับชั้นมาแล้ว — ลื่น เร็ว และไม่ต้องติดตั้งอะไรบนเครื่องนักเรียน</p>
+
+      <div class="jx-grid jx-grid--3">
+        <div class="jx-card jx-feat">
+          <span data-mascot="book" data-size="84"></span>
+          <h3>ชุดคำถามของคุณเอง</h3>
+          <p>สร้าง แก้ไข เพิ่ม-ลดคำถามได้เองผ่านหน้าเว็บ ไม่ต้องแตะโค้ด บันทึกแล้วใช้ได้ทันที</p>
+        </div>
+        <div class="jx-card jx-feat">
+          <span data-mascot="people" data-size="84" data-tone="teal"></span>
+          <h3>สามจอทำงานพร้อมกัน</h3>
+          <p>จอครูคุมเกม · จอฉายขึ้นโจทย์และอันดับ · จอนักเรียนตอบ — ซิงก์กันแบบเรียลไทม์</p>
+        </div>
+        <div class="jx-card jx-feat">
+          <span data-mascot="bolt" data-size="84"></span>
+          <h3>ยิ่งตอบเร็ว ยิ่งได้เยอะ</h3>
+          <p>ตอบถูกทันทีได้เต็ม 1,000 XP แล้วไล่ลดลงตามเวลาที่ใช้ — ลุ้นกันทุกวินาที</p>
+        </div>
+        <div class="jx-card jx-feat">
+          <span data-mascot="brain" data-size="84"></span>
+          <h3>คำถาม 5 รูปแบบ</h3>
+          <p>เลือกตอบ · จับคู่ · เรียงลำดับ · สืบสวนหาหลักฐาน · ประเมินตนเอง ไม่ใช่แค่ปรนัย</p>
+        </div>
+        <div class="jx-card jx-feat">
+          <span data-mascot="trophy" data-size="84"></span>
+          <h3>เห็นผลทันที</h3>
+          <p>ดูว่าข้อไหนคนตอบผิดเยอะ ใครยังไม่ตอบ ประกาศอันดับทีละขั้นให้ลุ้น และส่งออกคะแนนได้</p>
+        </div>
+        <div class="jx-card jx-feat">
+          <span data-mascot="shield" data-size="84"></span>
+          <h3>ปลอดภัยกับเด็ก</h3>
+          <p>ไม่เก็บชื่อจริง เบอร์ หรืออีเมลของนักเรียน ใช้เพียงชื่อเล่นและรหัสห้องเท่านั้น</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="jx-section">
+      <div class="jx-card jx-cta">
+        <span data-mascot="people" data-size="120" data-tone="pink"></span>
+        <div>
+          <p class="jx-eyebrow">คลังเกมของชุมชน</p>
+          <h2 class="jx-h2" style="font-size:1.7rem">เล่นของครูคนอื่นก่อนก็ได้</h2>
+          <p class="jx-lead" style="margin-top:8px">
+            ครูที่เผยแพร่ชุดคำถามไว้ ทุกคนหยิบไปเล่นได้ฟรี — กดเล่นคนเดียวได้ทันทีโดยไม่ต้องสมัคร
+            หรือคัดลอกไปแก้ให้เข้ากับบทเรียนของคุณ
+          </p>
+          <div class="jx-hero__cta" style="margin-top:18px;justify-content:flex-start">
+            <a class="ds-btn ds-btn--cyan" href="community.html">เข้าคลังเกม</a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="jx-section">
+      <div class="jx-card" style="text-align:center;padding:clamp(28px,5vw,46px)">
+        <span data-mascot="rocket" data-size="120"></span>
+        <p class="jx-eyebrow">สำหรับครูผู้สอน</p>
+        <h2 class="jx-h2">เปิดห้องแรกของคุณวันนี้</h2>
+        <p class="jx-lead" style="margin-inline:auto">
+          สมัครฟรี สร้างชุดคำถามของตัวเอง หรือหยิบชุดสำเร็จรูปไปปรับต่อ แล้วเปิดห้องให้นักเรียนเข้าเล่นได้เลย
+        </p>
+        <div class="jx-hero__cta">
+          <button class="ds-btn ds-btn--primary" id="signupBtn" type="button">สมัครใช้งานฟรี</button>
+          <button class="ds-btn ds-btn--ghost" id="loginBtn" type="button">เข้าสู่ระบบ</button>
+        </div>
+      </div>
     </section>
   </main>
 
-  <footer class="app-footer">
-    <span>โครงการ UPSKILL และการใช้สื่ออย่างสร้างสรรค์ · 28 ส.ค. 2569</span>
-    <nav aria-label="ลิงก์">
-      <a href="student-guide.html" target="_blank" rel="noopener">วิธีเล่น <span class="ds-en">How to play</span></a>
-      <a href="host.html">วิทยากร <span class="ds-en">Host</span></a>
-      <a href="admin.html">ผู้ดูแล <span class="ds-en">Admin</span></a>
-    </nav>
+  <footer class="jx-foot">
+    JDKS <b>Arena</b> — สนามแข่งแห่งการเรียนรู้ · สร้างโดย JDKS
   </footer>
-</div>
 
 <script type="module" src="js/ui.js"></script>
-<script type="module" src="js/join.js"></script>
+<script type="module" src="js/topbar.js"></script>
+<script type="module" src="js/mascot.js"></script>
+<script type="module" src="js/landing.js"></script>
 </body>
 </html>

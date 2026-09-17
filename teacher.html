@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>แผงของฉัน · JDKS Arena</title>
+  <meta name="theme-color" content="#4F46E5">
+  <script>try{document.documentElement.setAttribute('data-theme',localStorage.getItem('ds-theme')||'light')}catch(e){document.documentElement.setAttribute('data-theme','light')}</script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Kanit:wght@500;600;700&family=Sarabun:wght@400;600;700&family=JetBrains+Mono:wght@600;700&display=swap">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/arena.css">
+</head>
+<body>
+  <div class="ds-gridbg" aria-hidden="true"></div>
+
+  <header class="jx-top" data-topbar data-tag="แผงของฉัน" data-active="teacher"></header>
+
+  <main class="jx-wrap">
+    <p class="jx-eyebrow">Teacher Console</p>
+    <h1 class="jx-h2" style="font-size:clamp(1.7rem,4.5vw,2.4rem)">ชุดคำถามและห้องเรียนของคุณ</h1>
+
+    <div class="jx-tabs" id="tabs">
+      <button data-tab="mine" class="is-on">ชุดของฉัน</button>
+      <button data-tab="rooms">ห้องของฉัน</button>
+      <button data-tab="library">คลังสาธารณะ</button>
+    </div>
+
+    <div class="jx-toolbar">
+      <button class="ds-btn ds-btn--primary" id="newPack" type="button"><span data-icon="sparkles"></span> สร้างชุดใหม่</button>
+      <button class="ds-btn ds-btn--ghost" id="starterPack" type="button">เริ่มจากชุดตัวอย่าง</button>
+    </div>
+
+    <section id="panel"><div class="jx-empty"><div class="jx-empty__ic" data-icon="clock"></div><h3>กำลังโหลด…</h3></div></section>
+  </main>
+
+  <footer class="jx-foot">JDKS <b>Arena</b> — สนามแข่งแห่งการเรียนรู้</footer>
+
+<script type="module" src="js/ui.js"></script>
+<script type="module" src="js/topbar.js"></script>
+<script type="module" src="js/mascot.js"></script>
+<script type="module" src="js/teacher.js"></script>
+</body>
+</html>

@@ -1,5 +1,5 @@
 /* =================================================================
-   Tech / AI line-icon set — DIGITAL SURVIVAL
+   Tech / AI line-icon set — JDKS ARENA
    All icons: 24x24 viewBox, stroke=currentColor, inherit color/size.
    Usage:  el.innerHTML = icon('shield', 'ds-ico--lg');
            document.querySelectorAll('[data-icon]').forEach(hydrateIcons);
@@ -33,6 +33,39 @@ const P = {
   users:     '<circle cx="9" cy="9" r="3"/><path d="M3.5 19c0-3 2.5-5 5.5-5s5.5 2 5.5 5"/><path d="M16 6.5a3 3 0 0 1 0 5.5M20.5 19c0-2.3-1.4-4-3.5-4.6" opacity=".7"/>',
   wifiOff:   '<path d="M3 3l18 18"/><path d="M5 12.5a11 11 0 0 1 4-2.4M2 8.8A16 16 0 0 1 8 6"/><path d="M8.5 16a5 5 0 0 1 5.5-1.2M16 9.2A16 16 0 0 1 22 8.8" opacity=".7"/><circle cx="12" cy="19" r="1"/>',
   alert:     '<path d="M12 4l9 16H3l9-16z"/><path d="M12 10v4M12 17h.01"/>',
+
+
+  /* --- Console / platform (replaces the emoji set) --- */
+  bulb:      '<path d="M9 18h6M10 21h4"/><path d="M12 3a6 6 0 0 0-3.5 10.9c.5.4.8 1 .9 1.6h5.2c.1-.6.4-1.2.9-1.6A6 6 0 0 0 12 3z"/>',
+  flag:      '<path d="M6 21V4"/><path d="M6 5h11l-2 3.5L17 12H6z"/>',
+  monitor:   '<rect x="3" y="4" width="18" height="12" rx="2"/><path d="M9 20h6M12 16v4"/>',
+  dots:      '<circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/>',
+  globe:     '<circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3c2.6 2.6 2.6 15 0 18-2.6-3-2.6-15.4 0-18z"/>',
+  copy:      '<rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h8"/>',
+  check:     '<path d="M4.5 12.5l5 5 10-11"/>',
+  close:     '<path d="M6 6l12 12M18 6L6 18"/>',
+  camera:    '<rect x="3" y="7" width="18" height="13" rx="2.5"/><path d="M8.5 7l1.5-3h4l1.5 3"/><circle cx="12" cy="13.5" r="3.4"/>',
+  crown:     '<path d="M4 18h16"/><path d="M4 16l-1-9 5.5 4L12 5l3.5 6L21 7l-1 9z"/>',
+  book:      '<path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H19v15H6.5A2.5 2.5 0 0 0 4 20.5z"/><path d="M4 5.5v15"/><path d="M8 7.5h7M8 11h5"/>',
+  question:  '<circle cx="12" cy="12" r="9"/><path d="M9.6 9.3a2.5 2.5 0 0 1 4.9.7c0 1.7-2.5 2-2.5 3.5"/><path d="M12 17h.01"/>',
+  teacher:   '<circle cx="12" cy="6.5" r="2.8"/><path d="M6 20c0-3.3 2.7-5.5 6-5.5s6 2.2 6 5.5"/><path d="M3 11l9-4 9 4-9 4z" opacity=".6"/>',
+  target:    '<circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1"/>',
+  clock:     '<circle cx="12" cy="12" r="9"/><path d="M12 7v5.2l3.4 2"/>',
+  robot:     '<rect x="4" y="8" width="16" height="11" rx="3"/><path d="M12 4v4M9 13h.01M15 13h.01M9.5 16h5"/><path d="M2 12v3M22 12v3"/>',
+  room:      '<path d="M3 10.5L12 4l9 6.5"/><path d="M5.5 9.5V20h13V9.5"/><path d="M9.5 20v-5h5v5"/>',
+  mic:       '<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11.5a6.5 6.5 0 0 0 13 0"/><path d="M12 18v3M9 21h6"/>',
+  point:     '<path d="M9 11V5.5a1.6 1.6 0 0 1 3.2 0V11"/><path d="M12.2 11V9.2a1.5 1.5 0 0 1 3 0V11"/><path d="M15.2 11.4a1.5 1.5 0 0 1 3 0v3.2a6 6 0 0 1-6 6h-1a5 5 0 0 1-3.6-1.5L5 16.4a1.6 1.6 0 0 1 2.3-2.3L9 15.6"/>',
+  star:      '<path d="M12 3.5l2.6 5.4 5.9.8-4.3 4.2 1 5.9-5.2-2.8-5.2 2.8 1-5.9L3.5 9.7l5.9-.8z"/>',
+  speaker:   '<path d="M4 9.5h3.5L12 5.5v13L7.5 14.5H4z"/><path d="M16 9.5a4 4 0 0 1 0 5M18.5 7a7.5 7.5 0 0 1 0 10"/>',
+  music:     '<circle cx="7" cy="17.5" r="2.5"/><circle cx="17" cy="15.5" r="2.5"/><path d="M9.5 17.5V7l10-2v10.5"/><path d="M9.5 9.5l10-2"/>',
+  bell:      '<path d="M6.5 16V11a5.5 5.5 0 0 1 11 0v5l1.5 2.5H5z"/><path d="M10 19.5a2.2 2.2 0 0 0 4 0"/>',
+  eyeOff:    '<path d="M3 3l18 18"/><path d="M10.2 6.2A9.6 9.6 0 0 1 12 6c6 0 9.5 6 9.5 6a17 17 0 0 1-3.2 3.9M6.6 7.9A17.5 17.5 0 0 0 2.5 12S6 18 12 18c1.3 0 2.4-.2 3.5-.6"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/>',
+  party:     '<path d="M4.5 20.5l4.2-11 6.8 6.8z"/><path d="M14 4.5v2M18.5 7l1.5-1.5M19 12h2M16 9.5a2.5 2.5 0 0 1 3.5-3"/>',
+  leave:     '<path d="M14 4h4.5A1.5 1.5 0 0 1 20 5.5v13a1.5 1.5 0 0 1-1.5 1.5H14"/><path d="M10 8l-4 4 4 4M6 12h10"/>',
+  refresh:   '<path d="M20 12a8 8 0 1 1-2.6-5.9"/><path d="M20 4v4.5h-4.5"/>',
+  plus:      '<path d="M12 5v14M5 12h14"/>',
+  trash:     '<path d="M4.5 7h15M9.5 7V5.2A1.2 1.2 0 0 1 10.7 4h2.6a1.2 1.2 0 0 1 1.2 1.2V7"/><path d="M6.5 7l1 12.2A1.8 1.8 0 0 0 9.3 21h5.4a1.8 1.8 0 0 0 1.8-1.8L17.5 7"/>',
+  edit:      '<path d="M4 20h4L19 9a2.1 2.1 0 0 0-3-3L5 17z"/><path d="M14.5 6.5l3 3"/>',
 
   /* --- Theme --- */
   sun:       '<circle cx="12" cy="12" r="4"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M19.1 4.9l-1.8 1.8M6.7 17.3l-1.8 1.8"/>',

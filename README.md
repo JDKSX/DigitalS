@@ -1,4 +1,28 @@
-# 🛡️ DIGITAL SURVIVAL
+# 🏟️ JDKS ARENA
+
+**สนามแข่งแห่งการเรียนรู้** — แพลตฟอร์มเกมตอบคำถามสดสำหรับห้องเรียน ครูสมัครเอง สร้างชุดคำถามของตัวเองได้ทุกวิชา
+เปิดห้องให้นักเรียนเข้าด้วยรหัส 5 ตัว และเผยแพร่ชุดคำถามให้ครูคนอื่นหยิบไปใช้ต่อได้
+
+- **Stack:** Vanilla JS (ES Modules) + Firebase (Auth · Firestore) · ไม่มี build step
+- **แผนสถาปัตยกรรม + สิ่งที่ค้าง:** ดู [`PLATFORM.md`](PLATFORM.md)
+- **ผู้เยี่ยมชมเล่นได้โดยไม่ต้องสมัคร:** `community.html` → `play.html?pack=<id>` (หรือ `?pack=demo`)
+
+### หน้าใหม่ในเวอร์ชันแพลตฟอร์ม
+| ไฟล์ | ใคร | ทำอะไร |
+|---|---|---|
+| `login.html` | ครู | เข้าสู่ระบบ/สมัคร (หน้าเต็ม รองรับ `?mode=signup` และ `?next=`) |
+| `community.html` | ทุกคน | คลังเกมสาธารณะ ค้นหา · เล่นเลย · คัดลอกไปแก้ |
+| `play.html` | ทุกคน | เล่นเดี่ยวตามจังหวะตัวเอง ไม่ต้องมีบัญชี ไม่เขียนฐานข้อมูล |
+| `teacher.html` | ครู | แผงของฉัน — ชุดคำถาม ห้องเรียน คลังสาธารณะ |
+| `editor.html` | ครู | แก้ภารกิจและคำถามทั้ง 5 รูปแบบ |
+
+### โมดูลกลางที่ใช้ร่วมกัน
+`js/topbar.js` (แถบเมนู + สถานะบัญชี) · `js/mascot.js` (ตัวการ์ตูน 3D แบบ SVG + แอนิเมชัน CSS) ·
+`js/scoring.js` (สูตร XP ตอบเร็วได้เยอะ) · `js/game.js` (เอนจินคำถาม ใช้ทั้งเกมสดและเล่นเดี่ยว)
+
+---
+
+## เวิร์กช็อปต้นฉบับ (เสร็จสิ้นแล้ว) — DIGITAL SURVIVAL
 
 **8 Missions to Survive the Digital World** — Interactive learning game for a Digital Literacy workshop (~120 high-school students, iPad-first, played live and hosted by a facilitator).
 

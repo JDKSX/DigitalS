@@ -1,0 +1,23 @@
+# Never commit secrets or the Admin SDK service account
+serviceAccount*.json
+*-firebase-adminsdk-*.json
+.env
+.env.*
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Node (if tooling added later)
+node_modules/
+npm-debug.log*
+
+# Packaging artifacts (never commit)
+*.zip
+DigitalS*/
+digitalsurvival/
+
+# Slide decks exported for the workshop (regenerated, not source)
+*.pptx
