@@ -1,21 +1,36 @@
 /* =================================================================
-   Host controller (host.html) — DIGITAL SURVIVAL
+   Host controller (host.html) — JDKS ARENA
    full live control of the session state machine —
    pick a mission, START / LOCK / RESULTS / EXPLAIN / NEXT, with live
    player, answered and answer-distribution stats.
    ================================================================= */
-import { onAuth, signInStaff, getRole, authErrorTh, signOutUser } from './auth.js';
+import { onAuth, getTeacher, ensureTeacherProfile, signOutUser } from './auth.js';
+import { loginUrl } from './topbar.js';
 import { startIdleTimer } from './idle.js';
 import { createSession, listenSession, listenPlayers, listenQuestionAnswers, updateSession, updateStats,
   getQuestionAnswersOnce, getMissionPlayers, applyScores, markScored, markMissionComplete, writeLeaderboard,
   createDemoPlayers, submitAnswer } from './session.js';
-import { loadContent, loadQuestions, questionCount } from './content.js';
+import { loadGame, questionCount } from './content.js';
+import { shapeIcon } from './game.js';
 import { scoreQuestionAnswers } from './scoring.js';
 import { icon, hydrateIcons } from './icons.js';
+import { mascot } from './mascot.js';
+import { dxConfirm, dxAlert, toast } from './dialog.js';
+
+/* The five answer tiles, mirrored from js/game.js so the teacher's screen
+   speaks the same colour/shape language the students are tapping. */
+const TILE = [
+  { c: '#E11D48', d: '#9F1239' }, { c: '#2563EB', d: '#1E40AF' },
+  { c: '#F59E0B', d: '#B45309' }, { c: '#16A34A', d: '#166534' },
+  { c: '#7C3AED', d: '#5B21B6' }, { c: '#0891B2', d: '#155E75' },
+];
+const tileStyle = (i) => `--tile:${TILE[i % TILE.length].c};--tile-d:${TILE[i % TILE.length].d}`;
+const tileShape = (i) => shapeIcon(i);
 
 const $ = (s) => document.querySelector(s);
 const HOST_KEY = 'ds-host-session';
-const state = { uid: null, sid: null, session: null, players: [], content: null };
+const state = { uid: null, sid: null, session: null, players: [], content: null, questions: {}, packId: undefined };
+const urlPack = new URLSearchParams(location.search).get('pack');
 let unsubSession = null, unsubPlayers = null, unsubAnswers = null, answersQid = null, timerIv = null;
 const scoredLocal = new Set();
 const demoAnsweredQ = new Set();
@@ -35,70 +50,63 @@ function startStaffIdle() {
   } });
 }
 
-/* ---------------- staff login ---------------- */
+/* ---------------- staff login ----------------
+   The console is teachers-only: bounce to the real login page and come
+   straight back here (with the same ?pack=) once they are in. */
 function showLogin() {
-  if ($('.ds-modal-backdrop')) return;
-  const back = document.createElement('div');
-  back.className = 'ds-modal-backdrop';
-  back.innerHTML = `
-    <div class="ds-modal" role="dialog" aria-modal="true" aria-labelledby="loTitle">
-      <p class="ds-en" style="color:var(--cyan)">Staff Login</p>
-      <h2 id="loTitle">เข้าสู่ระบบวิทยากร</h2>
-      <div class="ds-form-row"><label class="ds-label" for="loEmail">อีเมล <span class="ds-en">email</span></label>
-        <input id="loEmail" class="ds-input" type="email" autocomplete="username" placeholder="host@example.com"></div>
-      <div class="ds-form-row"><label class="ds-label" for="loPass">รหัสผ่าน <span class="ds-en">password</span></label>
-        <input id="loPass" class="ds-input" type="password" autocomplete="current-password" placeholder="••••••••"></div>
-      <div class="ds-form-err" id="loErr" hidden></div>
-      <button class="ds-btn ds-btn--primary ds-btn--block" id="loGo" type="button" style="margin-top:22px">เข้าสู่ระบบ</button>
-      <p class="ds-muted" style="font-size:.8rem;margin-top:14px">บัญชีวิทยากรสร้างใน Firebase Console + เพิ่ม <span class="ds-mono">staff/{uid}</span> (ดู README)</p>
-    </div>`;
-  document.body.appendChild(back);
-  const email = $('#loEmail'), pass = $('#loPass'), err = $('#loErr'), go = $('#loGo');
-  email.focus();
-  async function submit() {
-    err.hidden = true; go.disabled = true; go.textContent = 'กำลังเข้าสู่ระบบ…';
-    try { await signInStaff(email.value, pass.value); back.remove(); }
-    catch (e) { err.hidden = false; err.textContent = authErrorTh(e); go.disabled = false; go.textContent = 'เข้าสู่ระบบ'; }
-  }
-  go.addEventListener('click', submit);
-  [email, pass].forEach((el) => el.addEventListener('keydown', (e) => { if (e.key === 'Enter') submit(); }));
+  location.replace(loginUrl('login'));
 }
+
+/* Visual preview of this console on localhost only: ?preview=1 skips the
+   teacher gate and paints fake data. It never touches Firestore (sid='demo'). */
+const PREVIEW = location.hostname === 'localhost' && new URLSearchParams(location.search).get('preview') === '1';
 
 /* ---------------- boot ---------------- */
 onAuth(async (user) => {
-  if (!user) return showLogin();
-  const role = await getRole(user.uid);
-  if (!role) return showLogin();
-  document.querySelector('.ds-modal-backdrop')?.remove(); // clear any stale login modal
+  if (PREVIEW) return;
+  if (!user || user.isAnonymous) return showLogin();
+  const teacher = (await getTeacher(user.uid)) || (await ensureTeacherProfile(user).catch(() => null));
+  if (!teacher) return showLogin();
   startStaffIdle(); // auto sign-out after 1h idle
   state.uid = user.uid;
-  state.content = await loadContent().catch(() => ({ missions: [] }));
-  state.questions = await loadQuestions().catch(() => ({}));
   let sid = null; try { sid = localStorage.getItem(HOST_KEY); } catch (_e) {}
-  if (sid) attachSession(sid); else renderCreate();
+  if (sid) { attachSession(sid); return; }
+  // No live room yet: the pack to play comes from ?pack= (the dashboard link).
+  await ensureGameLoaded(urlPack || null);
+  renderCreate();
 });
+
+/** Load a pack's content once. Safe to call repeatedly. */
+async function ensureGameLoaded(packId) {
+  if (state.packId === packId && state.content) return;
+  const g = await loadGame(packId);
+  state.packId = packId;
+  state.content = g.content;
+  state.questions = g.questions;
+}
 
 /* ---------------- create session ---------------- */
 function renderCreate() {
-  const panel = $('.host-col:last-child .ds-card');
-  panel.className = 'ds-card ds-empty';
-  panel.innerHTML = `<span class="ds-feat">${icon('play')}</span>
-    <h3>พร้อมเริ่มกิจกรรม</h3><p>สร้างเซสชันจริง หรือโหมดทดสอบพร้อมบอต 10 ตัว</p>
-    <div class="ds-row" style="gap:10px;flex-wrap:wrap;justify-content:center">
-      <button class="ds-btn ds-btn--primary" id="mkSession">${icon('sparkles')} สร้างเซสชัน</button>
-      <button class="ds-btn ds-btn--ghost" id="mkDemo">${icon('cpu')} DEMO + 10 บอท</button>
-    </div>`;
+  stage().innerHTML = `<div class="hx-empty">
+    ${mascot('rocket', { size: 150 })}
+    <h3>พร้อมเปิดห้องแล้ว</h3>
+    <p>เปิดห้องจริงให้นักเรียนเข้าด้วยรหัส 5 ตัว — หรือลองซ้อมกับบอต 10 ตัวก่อนก็ได้</p>
+    <div class="jx-hero__cta">
+      <button class="ds-btn ds-btn--primary" id="mkSession">${icon('room')} เปิดห้องเรียน</button>
+      <button class="ds-btn ds-btn--ghost" id="mkDemo">${icon('robot')} ซ้อม + บอต 10 ตัว</button>
+    </div>
+  </div>`;
   $('#mkSession').addEventListener('click', () => doCreate(false));
   $('#mkDemo').addEventListener('click', () => doCreate(true));
 }
 async function doCreate(demo) {
   $('#mkSession').disabled = true; $('#mkDemo').disabled = true;
   try {
-    const s = await createSession(state.uid, { demo });
+    const s = await createSession(state.uid, { demo, packId: urlPack || null, title: (state.content && state.content.title) || 'JDKS Arena' });
     if (demo) await createDemoPlayers(s.id, 10);
     localStorage.setItem(HOST_KEY, s.id);
     attachSession(s.id);
-  } catch (e) { alert('สร้างไม่สำเร็จ: ' + (e.message || e)); renderCreate(); }
+  } catch (e) { toast('เปิดห้องไม่สำเร็จ: ' + (e.message || e), 'error'); renderCreate(); }
 }
 
 /* ---------------- attach + control skeleton ---------------- */
@@ -106,81 +114,152 @@ function attachSession(sid) {
   state.sid = sid;
   if (unsubSession) unsubSession();
   if (unsubPlayers) unsubPlayers();
-  buildControlSkeleton();
 
-  unsubSession = listenSession(sid, (s) => {
-    if (!s) { try { localStorage.removeItem(HOST_KEY); } catch (_e) {} location.reload(); return; }
+  // The mission rail needs the pack, and the pack id lives on the session —
+  // so nothing is drawn until the first snapshot arrives. (Drawing earlier is
+  // what used to leave the console stuck on "กำลังเตรียมแผงควบคุม…" after a
+  // reload: state.content was still null.)
+  let ready = false;
+  const watchdog = setTimeout(() => {
+    if (ready) return;
+    stage().innerHTML = `<div class="hx-empty">${mascot('clock', { size: 130 })}
+      <h3>เปิดห้องเดิมไม่สำเร็จ</h3>
+      <p>อ่านข้อมูลห้องไม่ได้ — อาจถูกลบไปแล้ว หรือเครือข่ายมีปัญหา</p>
+      <div class="jx-hero__cta">
+        <button class="ds-btn ds-btn--primary" id="forgetRoom">เปิดห้องใหม่</button>
+        <button class="ds-btn ds-btn--ghost" id="retryRoom">ลองใหม่อีกครั้ง</button>
+      </div></div>`;
+    const f = $('#forgetRoom'); if (f) f.addEventListener('click', forgetRoom);
+    const r = $('#retryRoom'); if (r) r.addEventListener('click', () => location.reload());
+  }, 9000);
+
+  unsubSession = listenSession(sid, async (s) => {
+    if (!s) { forgetRoom(); return; }
+    try { await ensureGameLoaded(s.packId || null); }
+    catch (_e) { state.content = state.content || { missions: [], levels: [], badges: [], xpRules: {} }; }
+    if (!ready) { ready = true; clearTimeout(watchdog); renderMissions(); }
     state.session = s;
     renderControl(s);
     watchAnswers(s);
+  }, (err) => {
+    clearTimeout(watchdog);
+    stage().innerHTML = `<div class="hx-empty">${mascot('clock', { size: 130 })}
+      <h3>เชื่อมต่อห้องไม่ได้</h3><p>${esc((err && err.message) || 'ไม่ทราบสาเหตุ')}</p>
+      <div class="jx-hero__cta"><button class="ds-btn ds-btn--primary" id="forgetRoom">เปิดห้องใหม่</button></div></div>`;
+    const f = $('#forgetRoom'); if (f) f.addEventListener('click', forgetRoom);
   });
   unsubPlayers = listenPlayers(sid, (players) => { state.players = players; renderStats(); });
-
-  document.querySelectorAll('.quickbar [data-act]').forEach((b) => {
-    if (b.dataset.wired) return; b.dataset.wired = '1';
-    b.addEventListener('click', () => onAction(b.dataset.act));
-  });
 }
 
-function buildControlSkeleton() {
-  const panel = $('.host-col:last-child .ds-card');
-  panel.className = 'ds-card';
-  const missions = state.content.missions || [];
-  panel.innerHTML = `
-    <div class="ds-between">
-      <div><span class="ds-en">รหัสห้อง · session code</span>
-        <div class="host-code" id="hostCodeBig">—</div></div>
-      <div class="ds-row" style="gap:8px">
-        <a class="ds-chip" id="presenterLink" href="presenter.html" target="_blank" rel="noopener">${icon('chart')} เปิดจอฉาย ↗</a>
-        <button class="ds-chip ds-chip--gold" id="announceBtn" type="button">${icon('trophy')} ประกาศผลรวม</button>
-        <button class="ds-chip" id="endSession" type="button">${icon('trophy')} จบกิจกรรม</button>
-        <button class="ds-chip" id="newSession" type="button">${icon('sparkles')} เซสชันใหม่</button>
-      </div>
-    </div>
-    <div class="host-phase" id="hostPhase"></div>
-    <div class="ds-heading" style="margin-top:18px"><span class="ds-en">เลือกภารกิจ · missions</span></div>
-    <div class="mission-grid" id="missionGrid">
-      ${missions.map((m) => `<button class="m-tile" data-mid="${m.id}">
-        <span class="m-tile__done" aria-label="เล่นแล้ว">${icon('reveal')}</span>
-        <span class="m-tile__ic">${icon(m.icon || 'shield')}</span>
-        <span class="m-tile__no">${m.id === 'boss' ? 'BOSS' : String(m.no).padStart(2, '0')}</span>
-        <span class="m-tile__t">${m.titleTh}</span></button>`).join('')}
-    </div>
-    <div class="current-q" id="currentQ"></div>`;
-  hydrateIcons(panel);
-  panel.querySelectorAll('.m-tile').forEach((t) => t.addEventListener('click', () => startMission(t.dataset.mid)));
-  const es = panel.querySelector('#endSession');
-  if (es) es.addEventListener('click', () => {
-    if (confirm('จบกิจกรรม? ผู้เรียนจะเห็นหน้าสรุปผล (Digital Survivor) และห้องจะปิด')) {
-      updateSession(state.sid, { status: 'closed', finalAnnounce: false }).catch((e) => alert('ปิดไม่สำเร็จ: ' + (e.message || e)));
-    }
+/** End the round: close the room, then hand the teacher a brand-new code.
+    Room codes are single-use, so the one just finished can never be joined
+    again — the next class always starts on a clean code. */
+async function endActivity() {
+  if (!state.sid) return;
+  const ok = await dxConfirm({
+    title: 'จบกิจกรรมรอบนี้?',
+    message: 'ผู้เรียนจะเห็นหน้าสรุปผลทันที ห้องนี้จะปิดถาวร\nแล้วระบบจะออกรหัสห้องใหม่ให้คุณโดยอัตโนมัติ',
+    ok: 'จบกิจกรรม', cancel: 'ยังไม่จบ', danger: true,
   });
-  const an = panel.querySelector('#announceBtn');
-  if (an) an.addEventListener('click', () => {
-    if (confirm('เริ่มประกาศผลรวม? ห้องจะปิด (ผู้เรียนเห็นหน้าสรุปผล) แล้วคุณเผยอันดับทีละขั้นบนจอฉายได้')) {
-      updateSession(state.sid, { status: 'closed', finalAnnounce: true, announceStep: 0 }).catch((e) => alert('ประกาศไม่สำเร็จ: ' + (e.message || e)));
-    }
-  });
-  const ns = panel.querySelector('#newSession');
-  if (ns) ns.addEventListener('click', () => {
-    if (confirm('สร้างเซสชันใหม่? (เซสชันปัจจุบันจะยังอยู่ในระบบ ดูย้อนหลังได้ที่ Admin)')) {
-      try { localStorage.removeItem(HOST_KEY); } catch (_e) {}
-      scoredLocal.clear(); demoAnsweredQ.clear(); lastLbKey = ''; lastStats = {};
-      if (unsubSession) unsubSession(); if (unsubPlayers) unsubPlayers(); if (unsubAnswers) unsubAnswers();
-      state.sid = null; state.session = null;
-      renderCreate();
-    }
-  });
+  if (!ok) return;
+  if (!(await push({ status: 'closed', finalAnnounce: false }, 'จบกิจกรรม'))) return;
+  await rotateRoom();
 }
+
+/** Open the next room and switch this console to it. */
+async function rotateRoom() {
+  try {
+    const s = await createSession(state.uid, {
+      packId: state.packId || urlPack || null,
+      title: (state.content && state.content.title) || 'JDKS Arena',
+    });
+    try { localStorage.setItem(HOST_KEY, s.id); } catch (_e) {}
+    scoredLocal.clear(); demoAnsweredQ.clear(); lastLbKey = ''; lastStats = {};
+    state.players = []; renderStats();
+    attachSession(s.id);
+    toast(`ห้องเดิมปิดแล้ว · รหัสใหม่คือ ${s.code}`, 'success');
+  } catch (e) {
+    toast('เปิดห้องใหม่ไม่สำเร็จ: ' + ((e && e.message) || e), 'error');
+    forgetRoom();
+  }
+}
+
+/** Drop the remembered room and go back to the "open a room" screen. */
+function forgetRoom() {
+  try { localStorage.removeItem(HOST_KEY); } catch (_e) {}
+  scoredLocal.clear(); demoAnsweredQ.clear(); lastLbKey = ''; lastStats = {};
+  if (unsubSession) unsubSession(); if (unsubPlayers) unsubPlayers(); if (unsubAnswers) unsubAnswers();
+  unsubSession = unsubPlayers = unsubAnswers = null; answersQid = null;
+  state.sid = null; state.session = null;
+  setText('#codeVal', '—————');
+  ensureGameLoaded(urlPack || null).catch(() => {}).then(renderCreate);
+}
+
+const stage = () => document.getElementById('centerStage');
+
+/** The mission rail. Called once the pack is known. */
+function renderMissions() {
+  const rail = document.getElementById('missionRail');
+  if (!rail) return;
+  const missions = (state.content && state.content.missions) || [];
+  if (!missions.length) {
+    rail.innerHTML = '<p class="hx-none">ชุดนี้ยังไม่มีภารกิจ</p>';
+    return;
+  }
+  rail.innerHTML = missions.map((m) => `<button class="m-tile" data-mid="${esc(m.id)}">
+    <span class="m-tile__no">${m.id === 'boss' ? icon('crown') : String(m.no).padStart(2, '0')}</span>
+    <span class="m-tile__t">${esc(m.titleTh || m.title || m.id)}</span>
+    <span class="m-tile__done" aria-label="เล่นแล้ว">${icon('check')}</span>
+  </button>`).join('');
+  rail.querySelectorAll('.m-tile').forEach((t) =>
+    t.addEventListener('click', () => startMission(t.dataset.mid)));
+}
+
+/** Top-bar + control-bar buttons live in the page, so wire them once. */
+(function wireChrome() {
+  const on = (id, fn) => { const el = document.getElementById(id); if (el) el.addEventListener('click', fn); };
+
+  on('endSession', endActivity);
+  on('announceBtn', async () => {
+    if (!state.sid) return;
+    const ok = await dxConfirm({
+      title: 'ประกาศผลรวม',
+      message: 'ห้องจะปิดและผู้เรียนเห็นหน้าสรุปผล จากนั้นคุณเผยอันดับทีละขั้นบนจอฉายได้\nเมื่อประกาศเสร็จ กด “จบกิจกรรม” เพื่อรับรหัสห้องใหม่',
+      ok: 'เริ่มประกาศ', cancel: 'ยังก่อน',
+    });
+    if (ok) push({ status: 'closed', finalAnnounce: true, announceStep: 0 }, 'ประกาศผลรวม');
+  });
+  on('newSession', async () => {
+    const ok = await dxConfirm({
+      title: 'เปิดห้องใหม่?',
+      message: 'ห้องปัจจุบันจะยังอยู่ในระบบ แต่คุณจะได้รหัสห้องใหม่สำหรับรอบถัดไป',
+      ok: 'เปิดห้องใหม่', cancel: 'ยกเลิก',
+    });
+    if (ok) await rotateRoom();
+  });
+
+  // the ⋯ menu
+  const btn = document.getElementById('moreBtn');
+  const menu = document.getElementById('moreMenu');
+  if (btn && menu) {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      menu.hidden = !menu.hidden;
+      btn.setAttribute('aria-expanded', String(!menu.hidden));
+    });
+    document.addEventListener('click', () => { menu.hidden = true; btn.setAttribute('aria-expanded', 'false'); });
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') menu.hidden = true; });
+    menu.querySelectorAll('button').forEach((b) => b.addEventListener('click', () => { menu.hidden = true; }));
+  }
+
+  document.querySelectorAll('.hx-bar--bottom [data-act]').forEach((b) =>
+    b.addEventListener('click', () => onAction(b.dataset.act)));
+})();
 
 /* ---------------- render ---------------- */
 function renderControl(s) {
-  setText('#hostCodeBig', s.code);
-  const chip = document.querySelector('.role-chip b'); if (chip) chip.textContent = s.code;
+  setText('#codeVal', s.code || '—————');
   const pl = $('#presenterLink'); if (pl) pl.href = `presenter.html?s=${s.code}`;
-  setHTML('#hostPhase', `<span class="ds-chip">สถานะ: <b style="color:var(--text);margin-left:4px">${phaseTh(s.phase)}</b></span>
-    <span class="host-hint">${icon('sparkles')} ${hostHint(s)}</span>`);
-  hydrateIcons($('#hostPhase'));
 
   const done = s.completedMissions || [];
   document.querySelectorAll('.m-tile').forEach((t) => {
@@ -188,40 +267,59 @@ function renderControl(s) {
     t.classList.toggle('is-done', done.includes(t.dataset.mid));
   });
 
-  const m = (state.content.missions || []).find((x) => x.id === s.currentMission);
-  const cq = $('#currentQ');
-  if (cq) {
-    if (s.status === 'closed') {
-      if (s.finalAnnounce) renderAnnounceControls(s);
-      else cq.innerHTML = `<p class="ds-muted ds-center" style="padding:16px 0">จบกิจกรรมแล้ว — กด “🏆 ประกาศผลรวม” เพื่อประกาศอันดับ หรือ “เซสชันใหม่”</p>`;
-    }
-    else if (!s.currentMission) cq.innerHTML = `<p class="ds-muted ds-center" style="padding:16px 0">แตะภารกิจด้านบนเพื่อเริ่ม</p>`;
-    else {
-      const total = questionCount(state.questions, s.currentMission);
-      const q = s.currentQuestion ? state.questions[s.currentQuestion] : null;
-      const open = s.phase === 'question_open';
-      // ซิงก์ค่าเวลาที่เลือกกับที่บันทึกในเซสชัน (เผื่อเปิดคนละแท็บ)
-      if (typeof s.questionDuration === 'number' && !open) selectedDuration = s.questionDuration;
-      cq.innerHTML = `
-      <div class="ds-between" style="margin-top:6px">
-        <div><span class="ds-en">${m ? m.title : ''}</span><div style="font-family:var(--font-display);font-weight:700;font-size:1.15rem">${m ? m.titleTh : s.currentMission}</div>
-          <span class="ds-muted" style="font-size:.85rem">${s.currentQuestion ? `ข้อ ${s.questionIndex || 1}${total ? ' / ' + total : ''}` : (total ? `${total} ข้อ · ยังไม่เริ่ม` : 'ยังไม่มีคำถาม (เพิ่มใน questions.json)')}</span></div>
+  const el = stage();
+  const missions = (state.content && state.content.missions) || [];
+  const m = missions.find((x) => x.id === s.currentMission);
+
+  if (s.status === 'closed') {
+    if (s.finalAnnounce) renderAnnounceControls(s);
+    else el.innerHTML = `<div class="hx-empty">${mascot('trophy', { size: 140 })}
+      <h3>จบกิจกรรมแล้ว</h3>
+      <p>เลือก “ประกาศผลรวม” จากเมนูมุมขวาบน เพื่อเผยอันดับทีละขั้นบนจอฉาย
+         หรือ “เปิดห้องใหม่” เพื่อรับรหัสห้องใหม่สำหรับรอบต่อไป</p></div>`;
+  } else if (!s.currentMission) {
+    const nid = nextMissionId(s);
+    const nm = missions.find((x) => x.id === nid);
+    el.innerHTML = `<div class="hx-empty">${mascot('owl', { size: 140 })}
+      <h3>พร้อมเริ่มเกมแล้ว</h3>
+      <p>แตะภารกิจจากรายการด้านซ้ายเพื่อเลือกเอง หรือกดปุ่มนี้เพื่อเริ่มภารกิจถัดไปได้เลย</p>
+      <div class="jx-hero__cta">
+        <button class="ds-btn ds-btn--primary" id="startFirst" ${nid ? '' : 'disabled'}>
+          ${icon('play')} เริ่ม${nm ? ' “' + esc(nm.titleTh || nm.title) + '”' : ''}</button>
+      </div></div>`;
+    const b = el.querySelector('#startFirst');
+    if (b) b.addEventListener('click', () => startMission(nid));
+  } else {
+    const total = questionCount(state.questions, s.currentMission);
+    const q = s.currentQuestion ? state.questions[s.currentQuestion] : null;
+    const open = s.phase === 'question_open';
+    if (typeof s.questionDuration === 'number' && !open) selectedDuration = s.questionDuration;
+
+    const phaseCls = open ? 'hx-pill--live' : (s.phase === 'locked' ? 'hx-pill--warn' : '');
+    el.innerHTML = `
+      <div class="hx-head">
+        <span class="hx-pill ${phaseCls}">${phaseTh(s.phase)}</span>
+        ${s.currentQuestion ? `<span class="hx-step">ข้อ ${s.questionIndex || 1}${total ? ' / ' + total : ''}</span>` : ''}
         <div class="host-timer" id="hostTimer"></div>
       </div>
-      ${!s.currentQuestion && m && m.script ? `<div class="host-script"><div class="host-script__h">🎤 บทเกริ่นนำ (พูดนำก่อนกด “เริ่ม”)</div><p>${m.script}</p></div>` : ''}
-      ${q ? hostQuestionView(q, s) : (total ? '' : '')}
+      <h2 class="hx-mission">${esc(m ? (m.titleTh || m.title) : s.currentMission)}</h2>
+      ${m && m.topicTh ? `<p class="hx-topic">${esc(m.topicTh)}</p>` : ''}
+      <p class="hx-pill" style="margin-bottom:16px">${icon('point')} ${hostHint(s)}</p>
+      ${!s.currentQuestion && m && m.script
+        ? `<div class="hx-cue"><div class="hx-cue__h">${icon('mic')} บทเกริ่นนำ — พูดนำก่อนกด “เริ่ม”</div><p>${esc(m.script)}</p></div>` : ''}
+      ${q ? hostQuestionView(q, s) : (total ? '' : '<p class="hx-none">ภารกิจนี้ยังไม่มีคำถาม</p>')}
       ${s.phase === 'revealed' ? `<div class="host-live-chips">
-          ${s.showAnswer ? '<span class="host-live host-live--on">✓ เฉลยขึ้นทุกจอแล้ว</span>' : '<span class="host-live">เฉลยยังไม่ขึ้นจอ</span>'}
-          ${s.showResults ? '<span class="host-live host-live--on">🏆 ผลคะแนนขึ้นทุกจอแล้ว</span>' : '<span class="host-live">ผลคะแนนยังไม่ขึ้นจอ</span>'}
+          ${s.showAnswer ? `<span class="host-live host-live--on">${icon('check')} เฉลยขึ้นทุกจอแล้ว</span>` : '<span class="host-live">เฉลยยังไม่ขึ้นจอ</span>'}
+          ${s.showResults ? `<span class="host-live host-live--on">${icon('check')} ผลคะแนนขึ้นทุกจอแล้ว</span>` : '<span class="host-live">ผลคะแนนยังไม่ขึ้นจอ</span>'}
         </div>` : ''}
       ${!open ? durationPicker() : ''}`;
-      hydrateIcons(cq);
-      if (!open) cq.querySelectorAll('.host-dur__opt').forEach((b) => b.addEventListener('click', () => {
-        selectedDuration = Number(b.dataset.dur);
-        cq.querySelectorAll('.host-dur__opt').forEach((x) => x.classList.toggle('is-on', x === b));
-      }));
-    }
+    hydrateIcons(el);
+    if (!open) el.querySelectorAll('.host-dur__opt').forEach((b) => b.addEventListener('click', () => {
+      selectedDuration = Number(b.dataset.dur);
+      el.querySelectorAll('.host-dur__opt').forEach((x) => x.classList.toggle('is-on', x === b));
+    }));
   }
+
   updateQuickbar(s);
   runTimer(s);
   maybeScore(s);
@@ -230,7 +328,7 @@ function renderControl(s) {
 
 /* ---------------- final announcement controls (เผยทีละอันดับ) ---------------- */
 function renderAnnounceControls(s) {
-  const cq = $('#currentQ'); if (!cq) return;
+  const cq = stage(); if (!cq) return;
   const N = Math.min(state.players.length, 20);
   const step = Math.max(0, Math.min(typeof s.announceStep === 'number' ? s.announceStep : N, N));
   const nextRank = N - step;
@@ -238,15 +336,15 @@ function renderAnnounceControls(s) {
   cq.innerHTML = `<div class="host-announce">
     <div class="host-announce__h">${icon('trophy')} ประกาศผลรวม — เผยทีละอันดับ</div>
     <p class="ds-muted" style="font-size:.9rem">เผยจากอันดับท้าย ไล่ขึ้นหาที่ 1 (ลุ้นบนจอฉาย) · เผยครบแล้วจะขึ้นแท่น 1-2-3 + คอนเฟตติ</p>
-    <div class="host-announce__meta">เผยแล้ว <b>${step}</b> / ${N} อันดับ${step < N ? ` · ถัดไป: <b>อันดับที่ ${nextRank}</b>` : ' · ครบแล้ว 🎉'}</div>
+    <div class="host-announce__meta">เผยแล้ว <b>${step}</b> / ${N} อันดับ${step < N ? ` · ถัดไป: <b>อันดับที่ ${nextRank}</b>` : ' · ครบแล้ว'}</div>
     <div class="host-announce__btns">
-      <button class="ds-btn ds-btn--primary" id="revNext" type="button" ${step >= N ? 'disabled' : ''}>เผยอันดับถัดไป ▶</button>
+      <button class="ds-btn ds-btn--primary" id="revNext" type="button" ${step >= N ? 'disabled' : ''}>เผยอันดับถัดไป</button>
       <button class="ds-btn ds-btn--ghost" id="revAll" type="button" ${step >= N ? 'disabled' : ''}>เผยทั้งหมด</button>
       <button class="ds-btn ds-btn--ghost" id="revReset" type="button" ${step <= 0 ? 'disabled' : ''}>เริ่มใหม่</button>
     </div>
   </div>`;
   hydrateIcons(cq);
-  const set = (v) => updateSession(state.sid, { announceStep: v }).catch(() => {});
+  const set = (v) => push({ announceStep: v }, 'เผยอันดับ');
   cq.querySelector('#revNext')?.addEventListener('click', () => set(Math.min(N, step + 1)));
   cq.querySelector('#revAll')?.addEventListener('click', () => set(N));
   cq.querySelector('#revReset')?.addEventListener('click', () => set(0));
@@ -268,7 +366,7 @@ function hostQuestionView(q, s) {
   let body = '';
   if (q.type === 'scenario' || q.type === 'investigation') {
     if (q.type === 'investigation') {
-      body += `<div class="hq-news"><div class="hq-news__tag">📰 ข่าวที่ต้องตรวจสอบ</div>
+      body += `<div class="hq-news"><div class="hq-news__tag">${icon('search')} ข่าวที่ต้องตรวจสอบ</div>
         <div class="hq-news__hl">${esc(q.headline)}</div>
         <div class="hq-news__meta">ที่มา: ${esc(q.source || '—')} · ${esc(q.date || '')}</div>
         ${q.quote ? `<blockquote class="hq-news__q">${esc(q.quote)}</blockquote>` : ''}</div>`;
@@ -277,7 +375,10 @@ function hostQuestionView(q, s) {
     } else {
       body += `<p class="hq-prompt">${esc(q.q_prompt || q.situation)}</p>`;
     }
-    body += `<div class="hq-opts">${(q.options || []).map((o) => `<div class="hq-opt ${o.key === q.correct ? 'is-correct' : ''}"><span class="hq-opt__k">${o.key}</span><span>${esc(o.text)}</span>${o.key === q.correct ? '<span class="hq-opt__mk">✓ เฉลย</span>' : ''}</div>`).join('')}</div>`;
+    body += `<div class="hq-opts">${(q.options || []).map((o, i) => `<div class="hq-opt ${o.key === q.correct ? 'is-correct' : ''}">
+      <span class="hq-opt__k" style="${tileStyle(i)}" title="ตัวเลือก ${esc(o.key)}">${tileShape(i)}</span>
+      <span>${esc(o.text)}</span>
+      ${o.key === q.correct ? `<span class="hq-opt__mk">${icon('check')} เฉลย</span>` : ''}</div>`).join('')}</div>`;
   } else if (q.type === 'dragsort') {
     body += `<p class="hq-prompt">${esc(q.prompt)}</p>`;
     body += `<div class="hq-map">${(q.cards || []).map((c) => { const b = (q.buckets || []).find((x) => x.key === c.correct); return `<div class="hq-map__row"><span>${esc(c.text)}</span><span class="hq-map__ar">→</span><b>${esc(b ? (b.labelTh || b.label) : c.correct)}</b></div>`; }).join('')}</div>`;
@@ -289,7 +390,7 @@ function hostQuestionView(q, s) {
     body += `<div class="hq-ev"><ul>${(q.statements || []).map((st) => `<li>${esc(st.text)}</li>`).join('')}</ul></div>`;
     body += `<p class="ds-muted" style="font-size:.85rem">แบบประเมินตนเอง — ไม่มีถูก/ผิด (ทุกคนได้ XP เท่ากัน)</p>`;
   }
-  const expl = q.explanation ? `<div class="hq-expl"><b>💡 คำอธิบาย (สำหรับบรรยายเพิ่มเติม):</b><p>${esc(q.explanation)}</p></div>` : '';
+  const expl = q.explanation ? `<div class="hq-expl"><b>${icon('bulb')} คำอธิบาย (สำหรับบรรยายเพิ่มเติม):</b><p>${esc(q.explanation)}</p></div>` : '';
   return `<div class="host-qview ${answered ? 'is-revealed' : ''}">${body}${expl}</div>`;
 }
 
@@ -306,7 +407,7 @@ async function maybeDemo(s) {
     const delay = 600 + Math.floor(Math.random() * 9000);
     setTimeout(() => {
       const a = simulateAnswer(q);
-      submitAnswer({ sessionId: state.sid, playerId: bot.playerId }, a).catch(() => {});
+      submitAnswer({ sessionId: state.sid, playerId: bot.playerId, hostUid: state.uid }, a).catch(() => {});
     }, delay);
   });
 }
@@ -339,7 +440,9 @@ async function maybeScore(s) {
     if (!q) return;
     const rules = (state.content && state.content.xpRules) || {};
     const answers = await getQuestionAnswersOnce(state.sid, qid);
-    const updates = scoreQuestionAnswers(q, answers, rules);
+    // the clock the students actually had — drives the speed bonus
+    const limitMs = (typeof s.questionDuration === 'number' ? s.questionDuration : 45) * 1000;
+    const updates = scoreQuestionAnswers(q, answers, rules, limitMs);
 
     const count = questionCount(state.questions, s.currentMission);
     const isLast = count && (s.questionIndex || 0) >= count;
@@ -347,7 +450,7 @@ async function maybeScore(s) {
     if (isLast && !alreadyDone) {
       const mission = (state.content.missions || []).find((m) => m.id === s.currentMission);
       const badge = mission && mission.badge;
-      const bonus = rules.missionComplete || 100;
+      const bonus = rules.missionComplete || 500;
       const players = await getMissionPlayers(state.sid, s.currentMission);
       players.forEach((pid) => {
         let u = updates.find((x) => x.playerId === pid);
@@ -420,6 +523,7 @@ function watchAnswers(s) {
   if (unsubAnswers) { unsubAnswers(); unsubAnswers = null; }
   pushStats({ answeredCount: 0 }); // reset immediately on question change (no stale count)
   if (!qid) { setStat(2, 0); paintDistribution([]); return; }
+  paintDistribution([]);   // draw this question's empty bars right away
   unsubAnswers = listenQuestionAnswers(state.sid, qid, (answers) => {
     setStat(2, answers.length);
     paintDistribution(answers);
@@ -427,41 +531,82 @@ function watchAnswers(s) {
   });
 }
 
+/** Live answer spread, drawn with the SAME colours and shapes the students
+    see on their tiles — so the teacher can say "สามเหลี่ยมแดงเยอะสุด" and the
+    whole room knows which option that is. Questions without options (จับคู่ /
+    เรียงลำดับ / ประเมินตนเอง) get a plain count instead of bars. */
 function paintDistribution(answers) {
-  const counts = { A: 0, B: 0, C: 0, D: 0, E: 0 };
-  answers.forEach((a) => { const c = typeof a.choice === 'string' ? a.choice.toUpperCase() : null; if (c && counts[c] != null) counts[c]++; });
-  const total = answers.length || 1;
-  ['A', 'B', 'C', 'D', 'E'].forEach((k, i) => {
-    const row = document.querySelectorAll('.dist')[i]; if (!row) return;
-    row.querySelector('.dist__bar i').style.width = Math.round((counts[k] / total) * 100) + '%';
-    row.querySelector('.dist__v').textContent = counts[k];
+  const list = document.getElementById('distList');
+  if (!list) return;
+  const s = state.session;
+  const q = s && s.currentQuestion ? state.questions[s.currentQuestion] : null;
+  const opts = (q && Array.isArray(q.options)) ? q.options : null;
+
+  if (!q) {
+    list.innerHTML = '<p class="ds-muted ds-center" style="padding:14px 0">ยังไม่ได้เปิดคำถาม</p>';
+    return;
+  }
+  if (!opts) {
+    list.innerHTML = `<p class="ds-center" style="padding:14px 0">
+      <b style="font-family:var(--font-display);font-size:1.6rem;color:var(--electric)">${answers.length}</b>
+      <span class="ds-muted" style="display:block;font-size:.88rem">คนส่งคำตอบแล้ว · คำถามแบบนี้ไม่มีตัวเลือกให้นับ</span></p>`;
+    return;
+  }
+
+  const counts = opts.map(() => 0);
+  const byKey = {};
+  opts.forEach((o, i) => { byKey[String(o.key)] = i; });
+  answers.forEach((a) => {
+    const k = typeof a.choice === 'string' ? a.choice : null;
+    const i = k != null ? byKey[k] : undefined;
+    if (i != null) counts[i]++;
   });
+  const total = answers.length || 1;
+  const reveal = s.phase === 'revealed' && s.showAnswer;
+
+  list.innerHTML = opts.map((o, i) => `<div class="dist ${reveal && o.key === q.correct ? 'is-correct' : ''}"
+      style="${tileStyle(i)}" title="${esc(o.text)}">
+      <span class="dist__k">${tileShape(i)}</span>
+      <div class="dist__bar"><i style="width:${Math.round((counts[i] / total) * 100)}%"></i></div>
+      <span class="dist__v">${counts[i]}</span>
+    </div>`).join('');
 }
 
 /* ---------------- actions (state machine) ---------------- */
+/** The first mission that has not been completed yet (else the first one). */
+function nextMissionId(s) {
+  const missions = (state.content && state.content.missions) || [];
+  const done = s.completedMissions || [];
+  const next = missions.find((m) => !done.includes(m.id));
+  return (next || missions[0] || {}).id || null;
+}
+
 function startMission(mid) {
-  updateSession(state.sid, { currentMission: mid, phase: 'mission_intro', currentQuestion: null, questionIndex: 0, showAnswer: false, showResults: false });
+  if (!mid) { toast('ชุดคำถามนี้ยังไม่มีภารกิจ — เพิ่มภารกิจในหน้าแก้ไขชุดก่อน', 'error'); return; }
+  push({ currentMission: mid, phase: 'mission_intro', currentQuestion: null, questionIndex: 0, showAnswer: false, showResults: false }, 'เริ่มภารกิจ');
 }
 function onAction(act) {
   const s = state.session; if (!s) return;
   const openNext = () => {
     const count = questionCount(state.questions, s.currentMission);
     const n = (s.questionIndex || 0) + 1;
-    if (count && n > count) { alert('ครบทุกข้อของภารกิจนี้แล้ว — เลือกภารกิจถัดไปได้เลย'); return; }
+    if (count && n > count) { toast('ครบทุกข้อของภารกิจนี้แล้ว — เลือกภารกิจถัดไปได้เลย'); return; }
     // เปิดคำถามใหม่: ใช้เวลาที่วิทยากรเลือกไว้ + รีเซ็ตสถานะเฉลย/ผลคะแนน
-    updateSession(state.sid, { phase: 'question_open', currentQuestion: `${s.currentMission}_q${n}`, questionIndex: n, questionStartAt: Date.now(), questionDuration: selectedDuration, showAnswer: false, showResults: false });
+    push({ phase: 'question_open', currentQuestion: `${s.currentMission}_q${n}`, questionIndex: n, questionStartAt: Date.now(), questionDuration: selectedDuration, showAnswer: false, showResults: false }, 'เปิดคำถาม');
   };
   if (act === 'start') {
-    if (!s.currentMission) { alert('เลือกภารกิจก่อน'); return; }
+    // No mission picked yet? Don't dead-end the teacher — start the next one
+    // they haven't played. Tapping a mission in the rail still overrides this.
+    if (!s.currentMission) { startMission(nextMissionId(s)); return; }
     openNext();
   } else if (act === 'lock') {
-    updateSession(state.sid, { phase: 'locked' });
+    push({ phase: 'locked' }, 'ล็อกคำตอบ');
   } else if (act === 'results') {
     // ผลคะแนน — อิสระ, กดก่อนหรือหลังเฉลยก็ได้ (toggle)
-    updateSession(state.sid, { phase: 'revealed', showResults: !s.showResults });
+    push({ phase: 'revealed', showResults: !s.showResults }, 'แสดงผลคะแนน');
   } else if (act === 'explain') {
     // เฉลยคำตอบ — อิสระจากผลคะแนน (toggle)
-    updateSession(state.sid, { phase: 'revealed', showAnswer: !s.showAnswer });
+    push({ phase: 'revealed', showAnswer: !s.showAnswer }, 'แสดงเฉลย');
   } else if (act === 'next') {
     openNext();
   }
@@ -472,7 +617,7 @@ function updateQuickbar(s) {
   const on = { results: !!s.showResults, explain: !!s.showAnswer };
   const p = s.phase;
   if (s.status === 'closed') { /* all disabled — use ประกาศผล controls */ }
-  else if (!s.currentMission) { /* all disabled */ }
+  else if (!s.currentMission) { en.start = true; }   // starts the next unplayed mission
   else if (p === 'mission_intro' || p === 'lobby') en.start = true;
   else if (p === 'question_open') { en.lock = true; en.results = true; en.explain = true; }
   else if (p === 'locked') { en.results = true; en.explain = true; }
@@ -481,7 +626,7 @@ function updateQuickbar(s) {
     const more = !count || (s.questionIndex || 0) < count;
     en.results = true; en.explain = true; en.next = more;
   }
-  document.querySelectorAll('.quickbar [data-act]').forEach((b) => {
+  document.querySelectorAll('.hx-bar--bottom [data-act]').forEach((b) => {
     b.disabled = !en[b.dataset.act];
     b.classList.toggle('is-live', !!on[b.dataset.act]);
   });
@@ -497,11 +642,42 @@ function runTimer(s) {
   const dur = (s.questionDuration || 30) * 1000;
   const tick = () => {
     const left = Math.max(0, Math.ceil((start + dur - Date.now()) / 1000));
-    const t = el(); if (t) { t.textContent = fmtTime(left); t.classList.toggle('is-low', left <= 10); }
+    // seconds alone under a minute — easier to read at a glance than 00:24
+    const t = el(); if (t) { t.textContent = left < 60 ? String(left) : fmtTime(left); t.classList.toggle('is-low', left <= 10); }
     if (left <= 0 && timerIv) { clearInterval(timerIv); timerIv = null; }
   };
   tick(); timerIv = setInterval(tick, 500);
 }
+
+/* ---------------- talking back to the teacher ---------------- */
+/** Every write to the session goes through here, so a rejected write is never
+    silent again — the teacher sees exactly why nothing happened. */
+function push(patch, what = 'สั่งงาน') {
+  if (!state.sid) { toast('ยังไม่ได้เปิดห้อง — กด “เปิดห้องเรียน” ก่อน', 'error'); return Promise.resolve(false); }
+  return updateSession(state.sid, patch)
+    .then(() => true)
+    .catch((e) => {
+      const code = (e && e.code) || '';
+      toast(code === 'permission-denied'
+        ? `${what}ไม่สำเร็จ: ไม่มีสิทธิ์แก้ห้องนี้ (ห้องนี้อาจเป็นของบัญชีอื่น)`
+        : `${what}ไม่สำเร็จ: ${(e && e.message) || e}`, 'error');
+      try { console.error('[JDKS Arena host]', code, e); } catch (_e) {}
+      return false;
+    });
+}
+
+/* ---------------- room-code chip: tap to copy ---------------- */
+(function wireCodeChip() {
+  const chip = document.getElementById('codeChip');
+  if (!chip) return;
+  chip.addEventListener('click', async () => {
+    const code = (document.getElementById('codeVal') || {}).textContent || '';
+    if (!code || code.startsWith('—')) return;
+    try { await navigator.clipboard.writeText(code); } catch (_e) { return; }
+    chip.classList.add('is-copied');
+    setTimeout(() => chip.classList.remove('is-copied'), 1600);
+  });
+})();
 
 /* ---------------- utils ---------------- */
 function phaseTh(p) { return ({ lobby: 'ห้องรอ', mission_intro: 'เกริ่นภารกิจ', question_open: 'กำลังตอบ', locked: 'ล็อกคำตอบ', revealed: 'เฉลยแล้ว', paused: 'พักชั่วคราว' })[p] || p || '—'; }
@@ -518,21 +694,22 @@ function hostHint(s) {
 }
 function fmtTime(sec) { const m = Math.floor(sec / 60), s = sec % 60; return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`; }
 function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
-function setStat(i, v) { const el = document.querySelectorAll('.stat .ds-stat__num')[i]; if (el) el.textContent = v; }
+function setStat(i, v) { const el = document.querySelectorAll('.hx-stat__n')[i]; if (el) el.textContent = (v || 0).toLocaleString('en-US'); }
 function setText(sel, t) { const el = $(sel); if (el) el.textContent = t; }
 function setHTML(sel, h) { const el = $(sel); if (el) el.innerHTML = h; }
 
 /* Localhost-only UI preview (no Firestore writes) for visual verification. */
 if (location.hostname === 'localhost') {
   window.__hostDemo = async (patch) => {
-    document.querySelector('.ds-modal-backdrop')?.remove();
-    state.content = await loadContent().catch(() => ({ missions: [] }));
-    state.questions = await loadQuestions().catch(() => ({}));
+    const g = await loadGame(urlPack || null);
+    state.content = g.content; state.questions = g.questions; state.packId = urlPack || null;
     state.sid = 'demo';
-    buildControlSkeleton();
+    renderMissions();
     state.session = { code: 'DEMO1', phase: 'mission_intro', currentMission: 'm4', questionIndex: 0, playersJoined: 24, completedMissions: ['m1', 'm2'], ...(patch || {}) };
     renderControl(state.session);
     state.players = Array.from({ length: 24 }, (_, i) => ({ playerId: 'P' + String(i + 1).padStart(3, '0'), nickname: 'Player' + (i + 1), xp: i * 40, lastSeen: { toMillis: () => Date.now() } }));
     renderStats();
   };
+
+  if (PREVIEW) window.__hostDemo({ phase: 'question_open', currentQuestion: 'm4_q1', questionIndex: 1, questionStartAt: Date.now(), questionDuration: 45 });
 }
