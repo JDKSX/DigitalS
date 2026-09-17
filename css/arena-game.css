@@ -1,0 +1,118 @@
+/* =================================================================
+   JDKS ARENA — game screen ("arcade") layer
+   Loaded after arena.css on every screen that shows a live question:
+   student.html · play.html · presenter.html.
+   ================================================================= */
+
+/* ---- question header: timer ring · phase · live XP ---------------- */
+.qx-head {
+  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+.qx-timer {
+  --p: 100%;
+  position: relative; flex: none; width: 62px; height: 62px; border-radius: 50%;
+  display: grid; place-items: center;
+  background: conic-gradient(var(--electric) var(--p), var(--bg-500) 0);
+  transition: background .25s linear;
+}
+.qx-timer::after {
+  content: ''; position: absolute; inset: 6px; border-radius: 50%; background: var(--card-bg);
+}
+.qx-timer b {
+  position: relative; z-index: 1; font-family: var(--font-display); font-weight: 700;
+  font-size: 1.32rem; color: var(--text); font-variant-numeric: tabular-nums;
+}
+.qx-timer.is-low { background: conic-gradient(var(--danger) var(--p), var(--bg-500) 0); animation: qxPulse .9s ease-in-out infinite; }
+.qx-timer.is-low b { color: var(--danger); }
+.qx-timer.is-off { display: none; }
+@keyframes qxPulse { 0%,100% { transform: scale(1) } 50% { transform: scale(1.07) } }
+
+.qx-xp {
+  margin-left: auto; padding: 8px 15px; border-radius: var(--r-pill);
+  background: var(--warning-bg); border: 2px solid var(--xp); color: var(--xp);
+  font-family: var(--font-display); font-weight: 700; font-size: 1.02rem;
+  font-variant-numeric: tabular-nums; white-space: nowrap;
+}
+.qx-xp.is-low { background: var(--danger-bg); border-color: var(--danger); color: var(--danger); }
+
+/* ---- answer tiles ------------------------------------------------- */
+.qx-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 13px; margin-top: 4px; }
+.qx-tile {
+  display: flex; align-items: center; gap: 14px; text-align: left; width: 100%;
+  min-height: 86px; padding: 16px 18px; cursor: pointer;
+  border: 0; border-radius: 20px; color: #fff;
+  background: var(--tile); box-shadow: 0 6px 0 var(--tile-d);
+  font-family: var(--font-display); font-weight: 600; font-size: 1.05rem; line-height: 1.45;
+  transition: transform .09s ease, box-shadow .09s ease, opacity .2s ease, filter .2s ease;
+}
+.qx-tile:hover { filter: brightness(1.07); }
+.qx-tile:active { transform: translateY(6px); box-shadow: 0 0 0 var(--tile-d); }
+.qx-tile__shape {
+  flex: none; width: 46px; height: 46px; border-radius: 14px; display: grid; place-items: center;
+  background: rgba(255, 255, 255, .22);
+}
+.qx-shape { width: 22px; height: 22px; display: block; }
+.qx-tile__mark .ds-ico { width: 24px; height: 24px; }
+.qx-tile__txt { flex: 1; }
+.qx-tile__mark { flex: none; display: grid; place-items: center; }
+.qx-tile.is-selected {
+  outline: 5px solid var(--text); outline-offset: 3px;
+  transform: translateY(3px); box-shadow: 0 3px 0 var(--tile-d);
+}
+.qx-tile.is-selected::after { content: '✓'; margin-left: auto; font-size: 1.4rem; }
+.qx-tile.is-correct { animation: qxWin .5s cubic-bezier(.2,1.6,.4,1) both; }
+.qx-tile.is-wrong   { animation: qxNope .4s ease both; }
+.qx-tile.is-faded   { opacity: .34; filter: grayscale(.55); box-shadow: 0 3px 0 var(--tile-d); }
+@keyframes qxWin  { 0% { transform: scale(1) } 45% { transform: scale(1.05) } 100% { transform: scale(1) } }
+@keyframes qxNope { 0%,100% { transform: translateX(0) } 25% { transform: translateX(-8px) } 75% { transform: translateX(8px) } }
+
+.qx-send { margin-top: 18px; min-height: 60px; font-size: 1.1rem; }
+
+/* ---- win / miss splash ------------------------------------------- */
+.qx-splash {
+  display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+  padding: 18px 22px; border-radius: var(--r-lg); margin-bottom: 18px;
+  border: 3px solid var(--line-strong); background: var(--bg-800);
+  animation: qxDrop .45s cubic-bezier(.2,1.4,.4,1) both;
+}
+.qx-splash h3 { font-family: var(--font-display); font-size: 1.45rem; margin: 0; }
+.qx-splash p  { margin: 4px 0 0; font-family: var(--font-display); font-weight: 700; font-size: 1.15rem; }
+.qx-splash--win  { border-color: var(--success); background: var(--success-bg); }
+.qx-splash--win p { color: var(--xp); font-size: 1.6rem; }
+.qx-splash--lose { border-color: var(--warning); background: var(--warning-bg); }
+.qx-splash--lose p, .qx-splash--miss p { color: var(--text-muted); font-size: 1rem; font-weight: 600; }
+.qx-splash--miss { border-color: var(--line-strong); }
+@keyframes qxDrop { from { transform: translateY(-14px); opacity: 0 } to { transform: none; opacity: 1 } }
+
+/* ---- waiting / not-ready states ----------------------------------- */
+.qx-wait { text-align: center; padding: clamp(24px, 6vw, 46px) 16px; }
+.qx-wait h3 { font-family: var(--font-display); font-size: 1.4rem; margin: 10px 0 6px; }
+.qx-wait p  { margin: 0 auto; max-width: 44ch; color: var(--text-muted); }
+.qx-dots { display: flex; gap: 8px; justify-content: center; margin: 16px 0; }
+.qx-dots i {
+  width: 11px; height: 11px; border-radius: 50%; background: var(--electric);
+  animation: qxBounce 1.1s ease-in-out infinite;
+}
+.qx-dots i:nth-child(2) { animation-delay: .16s; background: var(--violet); }
+.qx-dots i:nth-child(3) { animation-delay: .32s; background: var(--cyan); }
+@keyframes qxBounce { 0%,60%,100% { transform: translateY(0); opacity: .45 } 30% { transform: translateY(-9px); opacity: 1 } }
+
+@media (max-width: 560px) {
+  .qx-tiles { grid-template-columns: 1fr; gap: 11px; }
+  .qx-tile { min-height: 74px; font-size: 1rem; padding: 14px; }
+  .qx-tile__shape { width: 40px; height: 40px; }
+  .qx-timer { width: 54px; height: 54px; }
+  .qx-timer b { font-size: 1.15rem; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .qx-tile, .qx-splash, .qx-dots i, .qx-timer.is-low { animation: none !important; }
+}
+
+/* ---- projector variant: read from the back of the room -------------- */
+.qx-tiles--big { gap: 16px; margin-top: 20px; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); }
+.qx-tiles--big .qx-tile { min-height: clamp(86px, 11vh, 130px); font-size: clamp(1.1rem, 2vw, 1.7rem); padding: 18px 22px; }
+.qx-tiles--big .qx-tile__shape { width: clamp(50px, 5vw, 66px); height: clamp(50px, 5vw, 66px); border-radius: 18px; }
+.qx-tiles--big .qx-shape { width: clamp(24px, 2.4vw, 32px); height: clamp(24px, 2.4vw, 32px); }
+.pres-q { font-size: clamp(1.5rem, 3.6vw, 3rem) !important; line-height: 1.25; text-wrap: balance; }
+.pres-row { display: flex; align-items: center; justify-content: center; gap: clamp(16px, 4vw, 40px); flex-wrap: wrap; margin-top: 12px; }
