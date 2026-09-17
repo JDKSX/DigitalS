@@ -13,7 +13,7 @@
 .gd-toc {
   position: sticky; top: 86px; display: flex; flex-direction: column; gap: 2px;
   padding: 14px; border-radius: var(--r-lg);
-  background: var(--card-bg); border: 2px solid var(--line); box-shadow: var(--shadow-1);
+  background: var(--card-bg); border: var(--bd); box-shadow: var(--shadow-1);
 }
 .gd-toc__h {
   font-family: var(--font-display); font-weight: 700; font-size: .76rem; letter-spacing: .1em;
@@ -61,7 +61,7 @@
   margin: 0 0 16px;
 }
 .gd-no {
-  flex: none; width: 36px; height: 36px; border-radius: 12px; display: grid; place-items: center;
+  flex: none; width: 36px; height: 36px; border-radius: var(--r-sm); display: grid; place-items: center;
   background: var(--electric); color: #fff; font-size: 1rem; box-shadow: 0 3px 0 #5B21B6;
 }
 .gd-sec .jx-card { padding: clamp(18px, 3vw, 26px); }
@@ -77,7 +77,7 @@
 .gd-steps li:last-child { margin-bottom: 0; }
 .gd-steps li::before {
   content: counter(gd); position: absolute; left: 0; top: 1px;
-  width: 27px; height: 27px; border-radius: 9px; display: grid; place-items: center;
+  width: 27px; height: 27px; border-radius: var(--r-sm); display: grid; place-items: center;
   background: var(--bg-500); color: var(--electric);
   font-family: var(--font-display); font-weight: 700; font-size: .82rem;
 }
@@ -88,7 +88,7 @@
 /* callout */
 .gd-note {
   display: flex; gap: 11px; margin: 18px 0 0; padding: 14px 16px; border-radius: var(--r-md);
-  background: var(--bg-600); border: 2px solid var(--line-strong);
+  background: var(--bg-600); border: var(--bd-strong);
   font-size: .95rem; line-height: 1.7;
 }
 .gd-note::before {
@@ -112,7 +112,7 @@
 .gd-btns > div { display: grid; grid-template-columns: 148px minmax(0, 1fr); gap: 14px; align-items: start; }
 .gd-btns b {
   display: inline-flex; align-items: center; gap: 8px; padding: 9px 14px; border-radius: var(--r-md);
-  background: var(--bg-600); border: 2px solid var(--line-strong);
+  background: var(--bg-600); border: var(--bd-strong);
   font-family: var(--font-display); font-size: .93rem;
 }
 .gd-btns b .ds-ico { width: 17px; height: 17px; color: var(--electric); }
@@ -121,7 +121,7 @@
 
 /* question types */
 .gd-types { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 11px; margin-top: 18px; }
-.gd-types > div { padding: 13px 15px; border-radius: var(--r-md); background: var(--bg-600); border: 2px solid var(--line); }
+.gd-types > div { padding: 13px 15px; border-radius: var(--r-md); background: var(--bg-600); border: var(--bd); }
 .gd-types b { display: block; font-family: var(--font-display); font-size: .96rem; margin-bottom: 4px; }
 .gd-types span { font-size: .89rem; color: var(--text-muted); line-height: 1.6; }
 
@@ -169,7 +169,7 @@
 .sg-code {
   display: flex; align-items: center; justify-content: center; gap: 16px; flex-wrap: wrap;
   margin-top: 18px; padding: 16px; border-radius: var(--r-lg);
-  background: var(--bg-600); border: 3px dashed var(--line-strong);
+  background: var(--bg-600); border: var(--bd-dash);
 }
 .sg-code span { font-size: .9rem; color: var(--text-muted); font-weight: 600; }
 .sg-code b {

@@ -49,6 +49,16 @@
   --glow-cyan:     0 4px 0 #0E9384;
 
   --r-sm: 12px; --r-md: 18px; --r-lg: 26px;
+
+  /* ---- ภาษาของ "กรอบ" — ใช้ 4 แบบนี้เท่านั้นทั้งระบบ ----
+     bd        กรอบการ์ด/แผงทั่วไป          bd-strong  พื้นผิวยกขึ้น/ช่องกรอก
+     bd-dash   ที่ว่าง/รอข้อมูล/ช่องวาง      3px สงวนไว้ให้พื้นผิวสีเน้นเท่านั้น */
+  --bd:        2px solid  var(--line);
+  --bd-strong: 2px solid  var(--line-strong);
+  --bd-dash:   2px dashed var(--line-strong);
+
+  /* ระยะห่างมาตรฐานระหว่างบล็อก/การ์ดที่วางซ้อนกันลงมา */
+  --stack: clamp(18px, 2.4vw, 28px);
   --font-display: 'Kanit', 'Noto Sans Thai', system-ui, sans-serif;
   --font-body: 'Sarabun', 'Noto Sans Thai', system-ui, sans-serif;
   color-scheme: dark;
@@ -128,14 +138,14 @@ h1, h2, h3, h4 { font-family: var(--font-display); letter-spacing: -.01em; }
 .ds-btn--cyan:active { box-shadow: 0 0 0 #0E7A6E; }
 .ds-btn--ghost {
   background: var(--bg-700); color: var(--text);
-  box-shadow: 0 4px 0 var(--card-lip); border: 2px solid var(--line-strong);
+  box-shadow: 0 4px 0 var(--card-lip); border: var(--bd-strong);
 }
 .ds-btn--ghost:active { box-shadow: 0 0 0 var(--card-lip); }
 
 /* Cards that sit on the page -------------------------------------- */
 .ds-card {
   background: var(--card-bg);
-  border: 2px solid var(--line);
+  border: var(--bd);
   border-radius: var(--r-lg);
   box-shadow: var(--shadow-2);
 }
@@ -144,7 +154,7 @@ h1, h2, h3, h4 { font-family: var(--font-display); letter-spacing: -.01em; }
 .ds-input {
   font-family: var(--font-body);
   background: var(--bg-600);
-  border: 2px solid var(--line-strong);
+  border: var(--bd-strong);
   border-radius: var(--r-sm);
   color: var(--text);
 }
@@ -154,7 +164,7 @@ textarea.ds-input { padding-block: 12px; min-height: auto; line-height: 1.6; }
 /* Chips ------------------------------------------------------------ */
 .ds-chip {
   font-family: var(--font-body); font-weight: 700; text-transform: none; letter-spacing: 0;
-  border-radius: var(--r-pill); border: 2px solid var(--line);
+  border-radius: var(--r-pill); border: var(--bd);
   background: var(--bg-600); color: var(--text-muted);
 }
 .ds-chip--live { background: var(--success-bg); border-color: var(--success); color: var(--success); }
@@ -185,6 +195,11 @@ textarea.ds-input { padding-block: 12px; min-height: auto; line-height: 1.6; }
 .jx-top__spacer { margin-left: auto; }
 
 .jx-wrap { width: 100%; margin-inline: auto; padding: clamp(18px, 3vw, 34px) clamp(14px, 2.5vw, 34px) 90px; }
+/* .jx-wrap เป็นบล็อกธรรมดา ลูกแต่ละตัวจึงเคยชนกันถ้าไม่ตั้ง margin เอง
+   กฎนี้เป็น "พื้นระยะขั้นต่ำ" ให้ทุกบล็อกที่วางต่อกันลงมา และเพราะวางไว้
+   ก่อนกฎของคอมโพเนนต์ทั้งหมด ตัวที่อยากได้ระยะมากกว่า (เช่น .jx-section)
+   จึงเขียนทับได้ตามปกติ */
+.jx-wrap > * + * { margin-top: var(--stack); }
 /* Prose still needs a comfortable measure even on a 2000px display. */
 .jx-lead, .jx-hero__sub { max-width: 62ch; }
 .jx-section { margin-top: clamp(38px, 7vw, 66px); }
@@ -203,7 +218,7 @@ textarea.ds-input { padding-block: 12px; min-height: auto; line-height: 1.6; }
 .jx-grid--3 { grid-template-columns: repeat(auto-fit, minmax(290px, 400px)); justify-content: center; }
 .jx-grid--2 { grid-template-columns: repeat(auto-fit, minmax(340px, 460px)); justify-content: center; }
 .jx-card {
-  background: var(--card-bg); border: 2px solid var(--line); border-radius: var(--r-lg);
+  background: var(--card-bg); border: var(--bd); border-radius: var(--r-lg);
   padding: 24px; box-shadow: var(--shadow-2);
   transition: transform .12s ease, box-shadow .12s ease;
 }
@@ -216,8 +231,11 @@ textarea.ds-input { padding-block: 12px; min-height: auto; line-height: 1.6; }
 }
 .jx-card__ic--xp   { background: var(--xp);   box-shadow: 0 4px 0 var(--xp-dim); }
 .jx-card__ic--teal { background: var(--cyan); box-shadow: 0 4px 0 var(--cyan-dim); }
-.jx-card h3 { font-family: var(--font-display); font-weight: 700; font-size: 1.16rem; margin: 0 0 8px; }
-.jx-card p  { margin: 0; color: var(--text-muted); font-size: .97rem; line-height: 1.65; }
+/* รีเซ็ตพวกนี้เป็น "ค่าตั้งต้น" ไม่ใช่คำสั่ง — ห่อด้วย :where() ให้ความจำเพาะ
+   เป็น 0 คอมโพเนนต์ที่วางในการ์ด (เช่น .gd-note ซึ่งเป็น <p>) จึงกำหนด
+   ระยะของตัวเองได้ ไม่ถูกล้างเป็น 0 จนไปชนบล็อกด้านบน */
+:where(.jx-card h3) { font-family: var(--font-display); font-weight: 700; font-size: 1.16rem; margin: 0 0 8px; }
+:where(.jx-card p) { margin: 0; color: var(--text-muted); font-size: .97rem; line-height: 1.65; }
 
 /* Hero ------------------------------------------------------------- */
 .jx-hero { text-align: center; padding-top: clamp(26px, 5vw, 54px); }
@@ -262,7 +280,7 @@ textarea.ds-input { padding-block: 12px; min-height: auto; line-height: 1.6; }
   width: 100%; text-align: center; font-family: var(--font-display); font-weight: 700;
   font-size: clamp(1.8rem, 7vw, 2.5rem); letter-spacing: .2em; text-transform: uppercase;
   padding: 16px 10px; border-radius: var(--r-md);
-  background: var(--bg-500); border: 3px dashed var(--line-strong); color: var(--text);
+  background: var(--bg-500); border: var(--bd-dash); color: var(--text);
 }
 .jx-code-input::placeholder { color: var(--text-dim); }
 .jx-code-input:focus { outline: none; border-style: solid; border-color: var(--electric); }
@@ -311,7 +329,7 @@ textarea.ds-input { padding-block: 12px; min-height: auto; line-height: 1.6; }
 .jx-perks span:not(.mx) { color: var(--text-muted); font-size: .92rem; line-height: 1.55; }
 .jx-authpage__note {
   margin-top: 26px; padding: 14px 16px; border-radius: var(--r-md);
-  background: var(--bg-800); border: 2px dashed var(--line-strong);
+  background: var(--bg-800); border: var(--bd-dash);
   font-size: .92rem; color: var(--text-muted);
 }
 .jx-authpage__note a { color: var(--link); font-weight: 700; }
@@ -352,12 +370,12 @@ textarea.ds-input { padding-block: 12px; min-height: auto; line-height: 1.6; }
   display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .jx-pack__meta { display: flex; gap: 8px; flex-wrap: wrap; }
 .jx-chip { display: inline-flex; align-items: center; gap: 5px; padding: 5px 12px; border-radius: var(--r-pill);
-  background: var(--bg-500); border: 2px solid var(--line); font-size: .78rem; color: var(--text-muted); font-weight: 700; }
+  background: var(--bg-500); border: var(--bd); font-size: .78rem; color: var(--text-muted); font-weight: 700; }
 .jx-chip--live { background: var(--success-bg); border-color: var(--success); color: var(--success); }
 .jx-pack__acts { display: flex; gap: 9px; flex-wrap: wrap; margin-top: auto; padding-top: 6px; }
 .jx-pack__acts .ds-btn { flex: 1 1 auto; min-width: 106px; padding-inline: 14px; font-size: .9rem; min-height: 46px; }
 
-.jx-empty { text-align: center; padding: clamp(32px, 6vw, 58px) 20px; border: 3px dashed var(--line-strong); border-radius: var(--r-lg); }
+.jx-empty { text-align: center; padding: clamp(32px, 6vw, 58px) 20px; border: var(--bd-dash); border-radius: var(--r-lg); margin-top: var(--stack); }
 .jx-empty__ic { font-size: 2.8rem; }
 .jx-empty h3 { font-family: var(--font-display); font-weight: 700; margin: 14px 0 6px; }
 .jx-empty p { color: var(--text-muted); margin: 0 auto 20px; max-width: 46ch; }
@@ -421,7 +439,7 @@ textarea.ds-input { padding-block: 12px; min-height: auto; line-height: 1.6; }
 
 .jx-solo-cta {
   display: flex; align-items: center; gap: 16px; text-align: left; margin-top: 30px;
-  padding: 18px; border-radius: var(--r-lg); background: var(--bg-800); border: 2px dashed var(--line-strong);
+  padding: 18px; border-radius: var(--r-lg); background: var(--bg-800); border: var(--bd-dash);
 }
 .jx-solo-cta b { display: block; font-family: var(--font-display); font-size: 1.05rem; }
 .jx-solo-cta span:not(.mx) { display: block; color: var(--text-muted); font-size: .92rem; line-height: 1.6; margin-top: 4px; }
@@ -457,7 +475,7 @@ textarea.ds-input { padding-block: 12px; min-height: auto; line-height: 1.6; }
 .st-mark {
   width: 58px; height: 58px; border-radius: var(--r-md); cursor: pointer; padding: 0;
   display: grid; place-items: center; overflow: hidden;
-  background: var(--bg-600); border: 3px solid var(--line);
+  background: var(--bg-600); border: var(--bd);
 }
 .st-mark:hover { border-color: var(--line-strong); }
 .st-mark.is-on { border-color: var(--electric); background: color-mix(in srgb, var(--electric) 14%, var(--bg-600)); }
@@ -470,7 +488,7 @@ textarea.ds-input { padding-block: 12px; min-height: auto; line-height: 1.6; }
 /* live preview */
 .st-prev { padding: 16px; }
 .st-prev__h { font-family: var(--font-display); font-weight: 700; font-size: .84rem; color: var(--text-dim); margin-bottom: 12px; }
-.st-fake { border-radius: var(--r-md); overflow: hidden; border: 2px solid var(--line); }
+.st-fake { border-radius: var(--r-md); overflow: hidden; border: var(--bd); }
 .st-fake__bar { display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: var(--bg-800); border-bottom: 2px solid var(--line); }
 .st-fake__mark {
   width: 40px; height: 40px; border-radius: 13px; flex: none; display: grid; place-items: center; overflow: hidden;
@@ -518,9 +536,9 @@ textarea.ds-input { padding-block: 12px; min-height: auto; line-height: 1.6; }
 .jx-field .ds-input, .jx-field textarea.ds-input, .jx-field select.ds-input { max-width: 860px; }
 .jx-field label { display: block; font-family: var(--font-display); font-size: .88rem; font-weight: 600; color: var(--text-muted); margin-bottom: 7px; }
 .jx-row2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 420px)); justify-content: start; gap: 15px; }
-.jx-mission { border: 2px solid var(--line); border-radius: var(--r-md); padding: 16px; margin-bottom: 14px; background: var(--bg-600); }
+.jx-mission { border: var(--bd); border-radius: var(--r-md); padding: 16px; margin-bottom: 14px; background: var(--bg-600); }
 .jx-mission__head { display: flex; align-items: center; gap: 11px; margin-bottom: 12px; }
-.jx-mission__no { width: 34px; height: 34px; border-radius: 11px; display: grid; place-items: center; flex: none;
+.jx-mission__no { width: 34px; height: 34px; border-radius: var(--r-sm); display: grid; place-items: center; flex: none;
   background: var(--electric); color: #fff; font-family: var(--font-display); font-weight: 700; font-size: .9rem;
   box-shadow: 0 3px 0 #5B21B6; }
 .jx-mission__qn { margin-left: auto; font-size: .8rem; color: var(--text-dim); font-weight: 600; }
@@ -531,7 +549,7 @@ textarea.ds-input { padding-block: 12px; min-height: auto; line-height: 1.6; }
 .jx-qbox__sum {
   display: flex; align-items: center; gap: 10px; cursor: pointer; list-style: none;
   padding: 10px 12px; border-radius: var(--r-md); background: var(--bg-700);
-  border: 2px solid var(--line); font-family: var(--font-display); font-weight: 600; font-size: .95rem;
+  border: var(--bd); font-family: var(--font-display); font-weight: 600; font-size: .95rem;
 }
 .jx-qbox__sum::-webkit-details-marker { display: none; }
 .jx-qbox__sum::before {
@@ -574,7 +592,7 @@ textarea.ds-input { padding-block: 12px; min-height: auto; line-height: 1.6; }
 .jx-menu-wrap { position: relative; }
 .jx-userbtn {
   display: flex; align-items: center; gap: 10px; cursor: pointer;
-  background: var(--bg-700); border: 2px solid var(--line-strong); color: var(--text);
+  background: var(--bg-700); border: var(--bd-strong); color: var(--text);
   border-radius: var(--r-pill); padding: 5px 13px 5px 5px; box-shadow: 0 3px 0 var(--card-lip);
   font-family: var(--font-body); text-align: left;
 }
@@ -585,7 +603,7 @@ textarea.ds-input { padding-block: 12px; min-height: auto; line-height: 1.6; }
 .jx-menu {
   position: absolute; right: 0; top: calc(100% + 10px); z-index: 60; min-width: 232px;
   display: flex; flex-direction: column; padding: 8px;
-  background: var(--card-bg); border: 2px solid var(--line-strong);
+  background: var(--card-bg); border: var(--bd-strong);
   border-radius: var(--r-md); box-shadow: 0 8px 0 var(--card-lip);
   animation: mxPop .16s ease-out both; transform-origin: top right;
 }
@@ -665,7 +683,7 @@ body.dx-open { overflow: hidden; }
 
 .dx {
   width: min(94vw, 440px); padding: clamp(20px, 4vw, 26px);
-  background: var(--card-bg); border: 3px solid var(--line-strong);
+  background: var(--card-bg); border: var(--bd-strong);
   border-radius: var(--r-lg); box-shadow: 0 8px 0 var(--card-lip);
   animation: dxPop .2s cubic-bezier(.2,1.5,.4,1) both;
 }
@@ -705,7 +723,7 @@ body.dx-open { overflow: hidden; }
 .dx__choice {
   display: flex; align-items: center; gap: 13px; width: 100%; text-align: left; cursor: pointer;
   padding: 14px 15px; border-radius: var(--r-md);
-  background: var(--bg-600); border: 2px solid var(--line-strong); color: var(--text);
+  background: var(--bg-600); border: var(--bd-strong); color: var(--text);
   font-family: var(--font-body); box-shadow: 0 3px 0 var(--card-lip);
   transition: border-color .14s ease, transform .08s ease, box-shadow .08s ease;
 }
@@ -724,7 +742,7 @@ body.dx-open { overflow: hidden; }
   position: fixed; left: 50%; bottom: 26px; transform: translateX(-50%); z-index: 210;
   display: flex; align-items: center; gap: 11px; max-width: min(92vw, 560px);
   padding: 12px 14px 12px 16px; border-radius: var(--r-pill);
-  background: var(--card-bg); border: 3px solid var(--line-strong); box-shadow: 0 6px 0 var(--card-lip);
+  background: var(--card-bg); border: var(--bd-strong); box-shadow: 0 6px 0 var(--card-lip);
   font-family: var(--font-body); font-weight: 600; font-size: .95rem; color: var(--text);
   animation: dxToast .24s cubic-bezier(.2,1.4,.4,1) both;
 }

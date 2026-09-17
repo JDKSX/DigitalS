@@ -30,7 +30,7 @@
 .sound-hint {
   position: fixed; top: 74px; right: 18px; z-index: 20;
   display: flex; align-items: center; height: 46px; padding: 0 16px;
-  border-radius: var(--r-pill); background: var(--bg-600); border: 1px solid var(--line-strong);
+  border-radius: var(--r-pill); background: var(--bg-600); border: var(--bd-strong);
   color: var(--text); font-size: .9rem; white-space: nowrap;
   animation: pulseHint 2s ease-in-out infinite;
 }
@@ -40,7 +40,7 @@
 /* Join panel (QR + code) */
 .pres-join { display: flex; align-items: center; justify-content: center; gap: clamp(20px, 6vw, 60px); flex-wrap: wrap; margin-top: 22px; }
 .pres-qr { display: flex; flex-direction: column; align-items: center; gap: 10px; }
-.pres-qr img { border-radius: 20px; background: #fff; padding: 14px; width: clamp(160px, 26vw, 240px); height: auto; border: 3px solid var(--line-strong); box-shadow: 0 7px 0 var(--card-lip); }
+.pres-qr img { border-radius: 20px; background: #fff; padding: 14px; width: clamp(160px, 26vw, 240px); height: auto; border: var(--bd-strong); box-shadow: 0 7px 0 var(--card-lip); }
 .pres-qr__cap { font-family: var(--font-display); font-weight: 600; font-size: clamp(.9rem, 1.8vw, 1.1rem); color: var(--text-muted); }
 .pres-join__code {
   display: flex; flex-direction: column; align-items: center; gap: 6px;
@@ -58,7 +58,7 @@
 .pres-answered {
   font-family: var(--font-display); font-weight: 700; font-variant-numeric: tabular-nums;
   font-size: clamp(1.4rem, 4vw, 2.4rem); transition: color .3s;
-  padding: 8px 22px; border-radius: var(--r-pill); background: var(--bg-800); border: 3px solid var(--line-strong);
+  padding: 8px 22px; border-radius: var(--r-pill); background: var(--bg-800); border: var(--bd-strong);
 }
 .pres-answered.is-all { border-color: var(--success); }
 .pres-answered.is-all { color: var(--success); }
@@ -85,8 +85,8 @@
 @keyframes bob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
 
 .pod-rest { max-width: 620px; margin: 22px auto 0; }
-.pod-row { display: flex; align-items: center; gap: 14px; padding: 13px 20px; border-radius: var(--r-md); background: var(--card-bg); border: 2px solid var(--line); box-shadow: var(--shadow-1); margin-bottom: 10px; animation: fadeUp .4s ease both; }
-.pod-rank { flex: none; width: 38px; height: 38px; border-radius: 12px; display: grid; place-items: center; font-family: var(--font-display); font-weight: 700; background: var(--bg-500); color: var(--text-muted); }
+.pod-row { display: flex; align-items: center; gap: 14px; padding: 13px 20px; border-radius: var(--r-md); background: var(--card-bg); border: var(--bd); box-shadow: var(--shadow-1); margin-bottom: 10px; animation: fadeUp .4s ease both; }
+.pod-rank { flex: none; width: 38px; height: 38px; border-radius: var(--r-sm); display: grid; place-items: center; font-family: var(--font-display); font-weight: 700; background: var(--bg-500); color: var(--text-muted); }
 .pod-name { flex: 1; font-size: clamp(1rem, 2.2vw, 1.35rem); font-weight: 600; display: flex; gap: 8px; align-items: center; }
 .pod-xp { font-family: var(--font-display); font-weight: 700; color: var(--xp); font-variant-numeric: tabular-nums; font-size: clamp(1.05rem, 2.4vw, 1.5rem); }
 
@@ -110,8 +110,8 @@
 /* Presenter leaderboard */
 .pres-lb { max-width: 720px; margin: 24px auto 0; text-align: left; }
 .pres-lb__title { font-family: var(--font-display); font-weight: 700; font-size: clamp(1.2rem, 3vw, 1.8rem); text-align: center; margin-bottom: 16px; }
-.pres-lb__row { display: flex; align-items: center; gap: 16px; padding: 14px 18px; border-radius: var(--r-md); background: var(--card-bg); border: 2px solid var(--line); box-shadow: var(--shadow-1); margin-bottom: 11px; }
-.pres-lb__rank { flex: none; width: 42px; height: 42px; border-radius: 13px; display: grid; place-items: center; font-family: var(--font-display); font-weight: 700; font-size: 1.2rem; background: var(--xp); color: #fff; box-shadow: 0 3px 0 var(--xp-dim); }
+.pres-lb__row { display: flex; align-items: center; gap: 16px; padding: 14px 18px; border-radius: var(--r-md); background: var(--card-bg); border: var(--bd); box-shadow: var(--shadow-1); margin-bottom: 11px; }
+.pres-lb__rank { flex: none; width: 42px; height: 42px; border-radius: var(--r-sm); display: grid; place-items: center; font-family: var(--font-display); font-weight: 700; font-size: 1.2rem; background: var(--xp); color: #fff; box-shadow: 0 3px 0 var(--xp-dim); }
 .pres-lb__name { flex: 1; font-size: clamp(1.1rem, 2.6vw, 1.6rem); font-weight: 600; }
 .pres-lb__xp { font-family: var(--font-display); font-weight: 700; font-variant-numeric: tabular-nums; font-size: clamp(1.2rem, 3vw, 1.8rem); color: var(--xp); }
 

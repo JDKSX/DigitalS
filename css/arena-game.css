@@ -81,7 +81,7 @@
 .qx-splash {
   display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
   padding: 18px 22px; border-radius: var(--r-lg); margin-bottom: 18px;
-  border: 3px solid var(--line-strong); background: var(--bg-800);
+  border: var(--bd-strong); background: var(--bg-800);
   animation: qxDrop .45s cubic-bezier(.2,1.4,.4,1) both;
 }
 .qx-splash h3 { font-family: var(--font-display); font-size: 1.45rem; margin: 0; }

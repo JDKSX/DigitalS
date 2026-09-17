@@ -10,7 +10,7 @@
 .sp-hdrpid {
   font-family: var(--font-mono); font-weight: 700; font-size: .95rem; letter-spacing: .08em;
   padding: 8px 14px; border-radius: var(--r-pill);
-  background: var(--bg-800); border: 2px solid var(--line-strong); color: var(--electric);
+  background: var(--bg-800); border: var(--bd-strong); color: var(--electric);
 }
 
 .sp-wrap {
@@ -56,7 +56,7 @@
 .sp-lvl__chip .ds-en { font-size: .64rem; opacity: .85; }
 .sp-lvl__next { font-size: .8rem; color: var(--text-muted); font-weight: 600; margin-left: auto; }
 
-.sp-lvlbar { height: 12px; border-radius: var(--r-pill); background: var(--bg-500); overflow: hidden; margin-top: 10px; border: 2px solid var(--line); }
+.sp-lvlbar { height: 12px; border-radius: var(--r-pill); background: var(--bg-500); overflow: hidden; margin-top: 10px; border: 1px solid var(--line); }
 .sp-lvlbar i {
   display: block; height: 100%; width: 0;
   background: linear-gradient(90deg, var(--xp), var(--violet));
@@ -69,7 +69,7 @@
    outline — otherwise they vanish into the background and the bar reads as
    "one lonely block" instead of "1 of 8". */
 .sp-prog .ds-segbar { gap: 6px; }
-.sp-prog .ds-segbar__seg { height: 14px; border-radius: 6px; background: var(--bg-500); border: 2px solid var(--line-strong); }
+.sp-prog .ds-segbar__seg { height: 14px; border-radius: 6px; background: var(--bg-500); border: 1px solid var(--line); }
 .sp-prog .ds-segbar__seg.is-done { background: var(--success); border-color: var(--success); }
 .sp-prog .ds-segbar__seg.is-current { background: var(--cyan); border-color: var(--cyan); box-shadow: none; animation: qxPulse 1.5s ease-in-out infinite; }
 @media (prefers-reduced-motion: reduce) { .sp-prog .ds-segbar__seg.is-current { animation: none; } }
@@ -86,7 +86,7 @@
 .q-hint { margin-top: 12px; font-size: .9rem; }
 
 /* ---- Investigation: the news card + evidence --------------------- */
-.news-card { background: var(--bg-600); border: 2px solid var(--line); border-left: 6px solid var(--cyan); border-radius: var(--r-md); padding: 16px; margin-bottom: 14px; }
+.news-card { background: var(--bg-600); border: var(--bd); border-left: 6px solid var(--cyan); border-radius: var(--r-md); padding: 16px; margin-bottom: 14px; }
 .news-card__tag { display: inline-flex; align-items: center; gap: 6px; font-size: .78rem; font-weight: 700; color: var(--cyan); margin-bottom: 8px; }
 .news-card__tag .ds-ico { width: 16px; height: 16px; }
 .news-card__headline { font-family: var(--font-display); font-size: 1.2rem; line-height: 1.35; margin: 0 0 10px; }
@@ -95,7 +95,7 @@
 .evidence { display: flex; flex-wrap: wrap; gap: 9px; margin-bottom: 16px; }
 .evidence__btn {
   display: inline-flex; align-items: center; gap: 7px; min-height: 48px; padding: 10px 16px; cursor: pointer;
-  border-radius: var(--r-pill); background: var(--bg-600); border: 2px solid var(--line-strong); color: var(--text);
+  border-radius: var(--r-pill); background: var(--bg-600); border: var(--bd-strong); color: var(--text);
   font-family: var(--font-body); font-weight: 600; font-size: .9rem; box-shadow: 0 3px 0 var(--card-lip);
 }
 .evidence__btn:active { transform: translateY(3px); box-shadow: none; }
@@ -107,7 +107,7 @@
 .pool, .order-pool { display: flex; flex-wrap: wrap; gap: 10px; margin: 10px 0 16px; min-height: 40px; }
 .card-chip {
   min-height: 52px; padding: 12px 17px; cursor: pointer; text-align: left;
-  border-radius: var(--r-md); background: var(--bg-600); border: 2px solid var(--line-strong); color: var(--text);
+  border-radius: var(--r-md); background: var(--bg-600); border: var(--bd-strong); color: var(--text);
   font-family: var(--font-body); font-weight: 600; font-size: .96rem; box-shadow: 0 3px 0 var(--card-lip);
 }
 .card-chip:active { transform: translateY(3px); box-shadow: none; }
@@ -117,7 +117,7 @@
 .buckets--2 { grid-template-columns: repeat(2, 1fr); }
 .buckets--3 { grid-template-columns: repeat(3, 1fr); }
 @media (max-width: 560px) { .buckets--2, .buckets--3 { grid-template-columns: 1fr; } }
-.bucket { background: var(--bg-600); border: 3px dashed var(--line-strong); border-radius: var(--r-md); padding: 13px; }
+.bucket { background: var(--bg-600); border: var(--bd-dash); border-radius: var(--r-md); padding: 13px; }
 .bucket__label { font-family: var(--font-display); font-weight: 700; font-size: .95rem; margin-bottom: 9px; display: flex; flex-direction: column; }
 .bucket__label .ds-en { font-size: .64rem; color: var(--text-dim); font-weight: 600; }
 .bucket__drop { display: flex; flex-direction: column; gap: 8px; min-height: 52px; }
@@ -125,19 +125,19 @@
 
 /* review lists (locked / revealed) */
 .review-list { display: flex; flex-direction: column; gap: 9px; margin-top: 12px; }
-.review-row { display: flex; justify-content: space-between; gap: 12px; padding: 13px 15px; border-radius: var(--r-md); background: var(--bg-600); border: 2px solid var(--line); }
+.review-row { display: flex; justify-content: space-between; gap: 12px; padding: 13px 15px; border-radius: var(--r-md); background: var(--bg-600); border: var(--bd); }
 .review-row__ans { font-size: .84rem; font-weight: 700; color: var(--text-muted); white-space: nowrap; }
 .review-row.is-correct { border-color: var(--success); background: var(--success-bg); }
 .review-row.is-wrong { border-color: var(--danger); background: var(--danger-bg); }
 
 /* ---- Self-assessment --------------------------------------------- */
 .assess { display: flex; flex-direction: column; gap: 14px; margin: 14px 0; }
-.assess__row { padding: 15px; border-radius: var(--r-md); background: var(--bg-600); border: 2px solid var(--line); }
+.assess__row { padding: 15px; border-radius: var(--r-md); background: var(--bg-600); border: var(--bd); }
 .assess__text { margin-bottom: 11px; font-weight: 600; line-height: 1.55; }
 .assess__scale { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
 .assess__opt {
   min-height: 58px; border-radius: var(--r-sm); cursor: pointer;
-  background: var(--bg-700); border: 2px solid var(--line); color: var(--text);
+  background: var(--bg-700); border: var(--bd); color: var(--text);
   font-family: var(--font-display); font-weight: 700; font-size: 1.05rem;
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
   box-shadow: 0 3px 0 var(--card-lip);
@@ -147,7 +147,7 @@
 .assess__opt.is-selected { background: var(--electric); color: #fff; border-color: var(--electric); box-shadow: 0 3px 0 #5B21B6; }
 .assess__opt.is-selected small { color: rgba(255,255,255,.85); }
 
-.balance { display: flex; align-items: center; gap: 18px; padding: 18px; border-radius: var(--r-md); background: var(--bg-600); border: 2px solid var(--line); margin: 12px 0 16px; }
+.balance { display: flex; align-items: center; gap: 18px; padding: 18px; border-radius: var(--r-md); background: var(--bg-600); border: var(--bd); margin: 12px 0 16px; }
 .balance__num { font-family: var(--font-display); font-weight: 700; font-size: 3rem; line-height: 1; color: var(--cyan); font-variant-numeric: tabular-nums; }
 .balance__num small { font-size: 1.15rem; color: var(--text-dim); }
 .balance__label { font-family: var(--font-display); font-weight: 700; line-height: 1.5; }
@@ -164,7 +164,7 @@
 @media (max-width: 560px) { .badge-grid { grid-template-columns: repeat(3, 1fr); } }
 .badge {
   display: grid; place-items: center; gap: 7px; padding: 14px 8px; text-align: center;
-  border-radius: var(--r-md); background: var(--bg-600); border: 2px solid var(--line);
+  border-radius: var(--r-md); background: var(--bg-600); border: var(--bd);
 }
 .badge__ic { width: 50px; height: 50px; border-radius: 16px; display: grid; place-items: center; background: var(--bg-500); color: var(--text-dim); }
 .badge__ic .ds-ico { width: 27px; height: 27px; }
@@ -181,7 +181,7 @@
 @media (max-width: 480px) { .final__stats { grid-template-columns: repeat(2, 1fr); } }
 .final__stats .ds-stat__num { font-family: var(--font-display); font-weight: 700; font-size: 1.6rem; font-variant-numeric: tabular-nums; }
 .final__badges { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin: 10px 0; }
-.final__badge { width: 42px; height: 42px; border-radius: 13px; display: grid; place-items: center; background: var(--bg-600); border: 2px solid var(--line); color: var(--text-dim); }
+.final__badge { width: 42px; height: 42px; border-radius: var(--r-sm); display: grid; place-items: center; background: var(--bg-600); border: var(--bd); color: var(--text-dim); }
 .final__badge .ds-ico { width: 22px; height: 22px; }
 .final__badge.is-earned { background: var(--level); color: #fff; border-color: transparent; box-shadow: 0 3px 0 var(--violet-dim); }
 .final__quote { margin: 18px auto 0; max-width: 44ch; color: var(--text-muted); font-style: italic; line-height: 1.8; border-left: 4px solid var(--xp); padding-left: 16px; text-align: left; }
@@ -196,12 +196,12 @@
 .final__actions .ds-btn { min-width: 152px; }
 
 /* ---- Live standings (when the teacher shows scores) --------------- */
-.stand { margin-top: 20px; padding: 15px; border-radius: var(--r-lg); background: var(--bg-600); border: 2px solid var(--line); }
+.stand { margin-top: 20px; padding: 15px; border-radius: var(--r-lg); background: var(--bg-600); border: var(--bd); }
 .stand__h { font-family: var(--font-display); font-weight: 700; font-size: 1.02rem; margin-bottom: 10px; display: flex; align-items: baseline; gap: 8px; }
 .stand__h .ds-en { font-size: .72rem; color: var(--text-dim); }
 .stand__row { display: flex; align-items: center; gap: 10px; padding: 9px 7px; border-bottom: 2px solid var(--line); }
 .stand__row:last-child { border-bottom: 0; }
-.stand__rk { flex: none; width: 28px; height: 28px; border-radius: 9px; display: grid; place-items: center; font-family: var(--font-display); font-weight: 700; background: var(--bg-500); color: var(--text-muted); font-size: .86rem; }
+.stand__rk { flex: none; width: 28px; height: 28px; border-radius: var(--r-sm); display: grid; place-items: center; font-family: var(--font-display); font-weight: 700; background: var(--bg-500); color: var(--text-muted); font-size: .86rem; }
 .stand__rk.is-top { background: var(--xp); color: #fff; box-shadow: 0 2px 0 var(--xp-dim); }
 .stand__nm { flex: 1; font-weight: 600; font-size: .94rem; min-width: 0; }
 .stand__nm .ds-pid { font-size: .78rem; color: var(--text-dim); }

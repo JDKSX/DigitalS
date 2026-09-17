@@ -6,7 +6,7 @@
    ================================================================= */
 
 .qcard {
-  background: var(--card-bg); border: 2px solid var(--line); border-radius: var(--r-md);
+  background: var(--card-bg); border: var(--bd); border-radius: var(--r-md);
   padding: 16px; margin-bottom: 14px; box-shadow: var(--shadow-1);
 }
 .qc-head { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; flex-wrap: wrap; }
@@ -26,7 +26,7 @@
 }
 .qf-in, .qf-area, .qf-sel {
   width: 100%; padding: 11px 13px; border-radius: var(--r-sm);
-  background: var(--bg-600); border: 2px solid var(--line-strong); color: var(--text);
+  background: var(--bg-600); border: var(--bd-strong); color: var(--text);
   font-family: var(--font-body); font-size: .96rem; line-height: 1.55;
   max-width: 860px;          /* see .jx-field in arena.css */
 }
@@ -42,14 +42,14 @@
 .qf-opt { display: flex; align-items: center; gap: 9px; }
 .qf-opt .qf-in, .qf-opt .qf-sel { flex: 1; min-width: 0; }
 .qf-key {
-  flex: none; width: 34px; height: 34px; border-radius: 11px; display: grid; place-items: center;
+  flex: none; width: 34px; height: 34px; border-radius: var(--r-sm); display: grid; place-items: center;
   background: var(--bg-500); color: var(--text-muted);
   font-family: var(--font-display); font-weight: 700; font-size: .88rem;
 }
 .qf-radio { flex: none; width: 22px; height: 22px; accent-color: var(--electric); cursor: pointer; }
 .qf-x {
   flex: none; width: 36px; height: 36px; display: grid; place-items: center; cursor: pointer;
-  border-radius: var(--r-sm); background: var(--bg-600); border: 2px solid var(--line-strong);
+  border-radius: var(--r-sm); background: var(--bg-600); border: var(--bd-strong);
   color: var(--text-dim);
 }
 .qf-x:hover { border-color: var(--danger); color: var(--danger); }
@@ -57,7 +57,7 @@
 
 .qf-addbtn {
   margin-top: 10px; padding: 9px 16px; border-radius: var(--r-pill); cursor: pointer;
-  background: var(--bg-600); border: 2px dashed var(--line-strong); color: var(--text-muted);
+  background: var(--bg-600); border: var(--bd-dash); color: var(--text-muted);
   font-family: var(--font-display); font-weight: 600; font-size: .9rem;
 }
 .qf-addbtn:hover { border-color: var(--electric); color: var(--electric); }
