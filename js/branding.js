@@ -43,10 +43,6 @@ export function cleanBrand(b = {}) {
   };
 }
 
-export function hasBrand(b) {
-  const c = cleanBrand(b || {});
-  return !!(c.appName || c.accent || c.mark || c.logoUrl);
-}
 
 /** The logo mark as HTML: an uploaded logo, a mascot, or the initials. */
 export function markHtml(brand, size = 46) {

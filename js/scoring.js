@@ -53,15 +53,5 @@ export function scoreQuestionAnswers(question, answers, rules = DEFAULT_RULES, l
     .filter((u) => u.xpDelta > 0);
 }
 
-/** Human-readable tiers, for explaining the rule on screen. */
-export function speedTiers(base = DEFAULT_RULES.base, rules = DEFAULT_RULES) {
-  const r = { ...DEFAULT_RULES, ...(rules || {}) };
-  return [
-    { label: 'ตอบทันที', pct: 100, xp: round10(base) },
-    { label: 'ใช้เวลา 25% ของเวลา', pct: 85, xp: round10(base * speedFactor(0.25, 1, r)) },
-    { label: 'ใช้เวลาครึ่งหนึ่ง', pct: 70, xp: round10(base * speedFactor(0.5, 1, r)) },
-    { label: 'เกือบหมดเวลา', pct: 40, xp: round10(base * r.minFactor) },
-  ];
-}
 
 export { DEFAULT_RULES };

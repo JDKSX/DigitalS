@@ -103,18 +103,6 @@ export function setVisibility(packId, visibility) {
   return updateDoc(doc(db, COLL.packs, packId), { visibility, updatedAt: serverTimestamp() });
 }
 
-/** Copy someone else's (public) pack into my account so I can edit it. */
-export async function forkPack(packId, ownerUid, ownerName) {
-  const src = await getPack(packId);
-  if (!src) throw new Error('ไม่พบชุดคำถามนี้');
-  const { id, createdAt, updatedAt, ownerUid: _o, ownerName: _n, visibility: _v, ...rest } = src;
-  return createPack(ownerUid, ownerName, {
-    ...rest,
-    title: `${src.title} (สำเนา)`,
-    visibility: 'private',
-    forkedFrom: packId,
-  });
-}
 
 /* ---------------- starter content ---------------- */
 

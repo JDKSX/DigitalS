@@ -7,8 +7,8 @@ import { db, COLL } from './firebase.js';
 import { ensureStudentAuth } from './auth.js';
 import { auth } from './firebase.js';
 import {
-  collection, doc, getDoc, getDocs, setDoc, updateDoc, deleteDoc, serverTimestamp,
-  query, where, limit, orderBy, onSnapshot, deleteField,
+  collection, doc, getDocs, setDoc, updateDoc, serverTimestamp,
+  query, where, limit, onSnapshot,
   writeBatch, increment, arrayUnion,
 } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
 
@@ -323,51 +323,9 @@ export async function listMySessions(hostUid, max = 30) {
 function ms(t) { return (t && t.toMillis) ? t.toMillis() : 0; }
 
 /* ---------- ADMIN: read & manage (staff-only) ---------- */
-export async function getSessions() {
-  const snap = await getDocs(query(collection(db, COLL.sessions), orderBy('createdAt', 'desc'), limit(60)));
-  return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
-}
-export async function getSessionUsers(sessionId) {
-  const snap = await getDocs(query(collection(db, COLL.users), where('sessionId', '==', sessionId)));
-  return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
-}
-export async function getSessionAnswers(sessionId) {
-  const snap = await getDocs(query(collection(db, COLL.answers), where('sessionId', '==', sessionId)));
-  return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
-}
-/** ADMIN: save editable content to Firestore (settings/{name}) so edits go
-    live instantly without re-uploading files. Read by content.js. */
-export function saveSettings(name, data) {
-  return setDoc(doc(db, COLL.settings, name), { data, updatedAt: serverTimestamp() });
-}
-export async function getSettings(name) {
-  const snap = await getDoc(doc(db, COLL.settings, name));
-  return snap.exists() ? snap.data().data : null;
-}
 
 export function setSessionStatus(sessionId, status) {
   return updateDoc(doc(db, COLL.sessions, sessionId), { status, updatedAt: serverTimestamp() });
 }
-export function archiveSession(sessionId, archived = true) {
-  return updateDoc(doc(db, COLL.sessions, sessionId), { archived, status: archived ? 'closed' : 'open', updatedAt: serverTimestamp() });
-}
 
-/** ADMIN: permanently delete a session and all its data (players, answers,
-    leaderboard). Batched (≤450/commit). Requires admin rights (rules). */
-export async function deleteSessionFully(sessionId) {
-  const delWhere = async (coll) => {
-    const snap = await getDocs(query(collection(db, coll), where('sessionId', '==', sessionId)));
-    for (let i = 0; i < snap.docs.length; i += 450) {
-      const batch = writeBatch(db);
-      snap.docs.slice(i, i + 450).forEach((d) => batch.delete(d.ref));
-      await batch.commit();
-    }
-  };
-  await delWhere(COLL.users);
-  await delWhere(COLL.answers);
-  try { await deleteDoc(doc(db, COLL.leaderboards, sessionId)); } catch (_e) {}
-  try { await deleteDoc(doc(db, COLL.stats, sessionId)); } catch (_e) {}
-  await deleteDoc(doc(db, COLL.sessions, sessionId));
-}
 
-export { deleteField };

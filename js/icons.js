@@ -106,14 +106,3 @@ export function toggleTheme() {
   return next;
 }
 
-/** Build a ready-to-use theme toggle button element. */
-export function makeThemeToggle() {
-  const btn = document.createElement('button');
-  btn.className = 'ds-iconbtn';
-  btn.type = 'button';
-  btn.setAttribute('aria-label', 'สลับธีมสว่าง/มืด');
-  btn.title = 'สลับธีม';
-  btn.innerHTML = `<span class="icon-sun">${icon('sun')}</span><span class="icon-moon">${icon('moon')}</span>`;
-  btn.addEventListener('click', () => toggleTheme());
-  return btn;
-}

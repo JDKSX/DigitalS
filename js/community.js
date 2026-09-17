@@ -9,7 +9,6 @@ import { ensureStudentAuth, onAuth, getTeacher } from './auth.js';
 import { listPublicPacks } from './packs.js';
 import { mascot, hydrateMascots } from './mascot.js';
 import { loginUrl } from './topbar.js';
-import { toast } from './dialog.js';
 import { icon } from './icons.js';
 
 const $ = (s) => document.querySelector(s);

@@ -66,13 +66,8 @@ export async function loadGame(packId) {
 
 /* Legacy helpers: bundled content only (no pack). Kept for sessions created
    before packs existed; game screens should call loadGame(packId) instead. */
-export async function loadContent() { return (await loadLegacy()).content; }
-export async function loadQuestions() { return (await loadLegacy()).questions; }
 
 /* ---------------- pure helpers (unchanged API) ---------------- */
-export function questionById(questions, id) {
-  return (questions && questions[id]) || null;
-}
 
 /** How many questions a mission has (by <missionId>_q<n> ids). */
 export function questionCount(questions, missionId) {
@@ -88,9 +83,6 @@ export function levelForXp(levels, xp) {
   return cur;
 }
 
-export function missionById(content, id) {
-  return ((content && content.missions) || []).find((m) => m.id === id) || null;
-}
 export function badgeById(content, id) {
   return ((content && content.badges) || []).find((b) => b.id === id) || null;
 }

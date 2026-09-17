@@ -15,7 +15,7 @@ import { shapeIcon } from './game.js';
 import { scoreQuestionAnswers } from './scoring.js';
 import { icon, hydrateIcons } from './icons.js';
 import { mascot } from './mascot.js';
-import { dxConfirm, dxAlert, toast } from './dialog.js';
+import { dxConfirm, toast } from './dialog.js';
 import { applyBrand } from './branding.js';
 
 /* The five answer tiles, mirrored from js/game.js so the teacher's screen
