@@ -1,111 +1,171 @@
-<title>How to Play Digital Survival</title>
-<style>
-@import url('https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=Noto+Sans+Thai:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap');
-:root{
-  --bg-900:#070E1C;--bg-800:#0C1626;--bg-700:#122135;--bg-600:#1A2E48;--bg-500:#24405F;
-  --line:rgba(120,160,210,.16);--line-strong:rgba(120,160,210,.30);
-  --text:#EAF2FF;--text-muted:#93A7C6;--text-dim:#607A9C;
-  --electric:#2E7DFF;--cyan:#22D3EE;--violet:#A78BFA;--xp:#FFC24B;--success:#34D399;--danger:#FB6B6B;
-  --card:linear-gradient(180deg,rgba(26,46,72,.55),rgba(18,33,53,.9));--grad:linear-gradient(120deg,var(--cyan),var(--violet));
-  --g1:rgba(46,125,255,.14);--g2:rgba(34,211,238,.10);
-  --fd:'Sora','Noto Sans Thai',sans-serif;--fb:'Noto Sans Thai',sans-serif;--fm:'JetBrains Mono',monospace;
-  color-scheme:dark;
-}
-:root[data-theme="light"]{
-  --bg-900:#EEF3FB;--bg-800:#E7EEF8;--bg-700:#FFFFFF;--bg-600:#F2F6FC;--bg-500:#E3EBF6;
-  --line:rgba(30,64,120,.14);--line-strong:rgba(30,64,120,.26);
-  --text:#0B1B33;--text-muted:#47607F;--text-dim:#8397B3;
-  --card:linear-gradient(180deg,#FFF,#F6F9FE);--g1:rgba(46,125,255,.10);--g2:rgba(124,92,240,.08);
-  color-scheme:light;
-}
-*{box-sizing:border-box}
-body{margin:0;min-height:100dvh;font-family:var(--fb);color:var(--text);line-height:1.6;
-  background:radial-gradient(1200px 600px at 85% -10%,var(--g1),transparent 60%),radial-gradient(900px 500px at -10% 110%,var(--g2),transparent 55%),var(--bg-900);
-  -webkit-font-smoothing:antialiased}
-.wrap{max-width:720px;margin:0 auto;padding:30px 22px 80px}
-h1,h2,h3{font-family:var(--fd);margin:0;line-height:1.15;text-wrap:balance}
-.top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
-.eyebrow{font-family:var(--fm);font-size:.72rem;letter-spacing:.18em;text-transform:uppercase;color:var(--cyan);font-weight:700}
-.toggle{width:44px;height:44px;border-radius:999px;display:grid;place-items:center;cursor:pointer;background:var(--bg-600);border:1px solid var(--line-strong);color:var(--text);font-size:1.1rem}
-.hero-title{font-size:clamp(2rem,7vw,3rem);font-weight:800}
-.aitext{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
-.lead{color:var(--text-muted);margin-top:8px}
-.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:22px;margin-top:18px;box-shadow:0 8px 24px rgba(0,0,0,.28)}
-h2.sec{font-size:1.3rem;margin:36px 0 2px}
-.big-steps{counter-reset:s;list-style:none;padding:0;margin:8px 0 0}
-.big-steps li{position:relative;padding:16px 0 16px 60px;border-bottom:1px solid var(--line)}
-.big-steps li:last-child{border-bottom:0}
-.big-steps li::before{counter-increment:s;content:counter(s);position:absolute;left:0;top:14px;width:42px;height:42px;border-radius:12px;background:var(--grad);color:#04121b;display:grid;place-items:center;font-family:var(--fd);font-weight:800;font-size:1.2rem}
-.big-steps b{font-family:var(--fd)}
-.types{display:grid;gap:12px}
-.type{display:flex;gap:14px;align-items:flex-start;padding:14px;border-radius:14px;background:var(--bg-700);border:1px solid var(--line)}
-.type .ic{flex:none;width:46px;height:46px;border-radius:12px;display:grid;place-items:center;font-size:1.5rem;background:var(--bg-600)}
-.type h4{font-family:var(--fd);margin:0 0 3px}
-.type p{margin:0;color:var(--text-muted);font-size:.92rem}
-.passport{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:6px}
-@media(max-width:520px){.passport{grid-template-columns:1fr}}
-.pp{padding:14px;border-radius:12px;background:var(--bg-700);border:1px solid var(--line);text-align:center}
-.pp .e{font-size:1.6rem}
-.pp b{display:block;font-family:var(--fd);margin-top:4px}
-.pp span{font-size:.82rem;color:var(--text-muted)}
-.tips{list-style:none;padding:0;margin:0}
-.tips li{display:flex;gap:12px;padding:11px 0;border-bottom:1px solid var(--line)}
-.tips li:last-child{border-bottom:0}
-.tips .ic{flex:none;font-size:1.2rem}
-.quote{margin-top:20px;padding:18px 20px;border-radius:14px;background:var(--bg-800);border:1px solid var(--line);border-left:3px solid var(--xp);font-style:italic;color:var(--text)}
-.code-box{font-family:var(--fm);font-weight:700;letter-spacing:.15em;color:var(--cyan)}
-</style>
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>วิธีเล่น · JDKS Arena</title>
+  <meta name="description" content="วิธีเข้าเกมและวิธีเล่น JDKS Arena สำหรับนักเรียน — ใช้แค่รหัสห้องกับชื่อเล่น">
+  <meta name="theme-color" content="#7C3AED">
+  <script>try{document.documentElement.setAttribute('data-theme',localStorage.getItem('ds-theme')||'light')}catch(e){document.documentElement.setAttribute('data-theme','light')}</script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Kanit:wght@500;600;700&family=Sarabun:wght@400;600;700&family=JetBrains+Mono:wght@600;700&display=swap">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/arena.css">
+  <link rel="stylesheet" href="css/arena-game.css">
+  <link rel="stylesheet" href="css/guide.css">
+</head>
+<body>
+  <div class="ds-gridbg" aria-hidden="true"></div>
 
-<div class="wrap">
-  <div class="top">
-    <div><p class="eyebrow">คู่มือผู้เล่น · Player Guide</p></div>
-    <button class="toggle" id="tt" aria-label="สลับธีม">◐</button>
-  </div>
-  <h1 class="hero-title"><span class="aitext">วิธีเล่น</span> 🎮</h1>
-  <p class="lead">เกมบน <b>JDKS Arena</b> — 8 ภารกิจฝึกเอาตัวรอดในโลกดิจิทัล เล่นบน iPad ของคุณ ไม่ต้องสมัครสมาชิก ไม่เก็บข้อมูลส่วนตัว</p>
+  <header class="jx-top" data-topbar data-tag="วิธีเล่น"></header>
 
-  <h2 class="sec">เข้าเกมยังไง? (3 ขั้น)</h2>
-  <div class="card">
-    <ol class="big-steps">
-      <li><b>เปิดลิงก์เกม</b> ที่วิทยากรให้ (บนจอ/กระดาน) ด้วย Safari แล้วกด <b>"เข้าสู่ภารกิจ"</b></li>
-      <li><b>กรอกรหัสห้อง</b> <span class="code-box">ABCDE</span> ที่ขึ้นบนจอหน้าห้อง + <b>ตั้งชื่อเล่น</b> (ไม่ต้องใช้ชื่อจริง) + ห้อง/ชั้น</li>
-      <li>ได้ <b>Player ID</b> ของตัวเอง (เช่น P084) → เข้า <b>ห้องรอ</b> · รอวิทยากรเริ่ม</li>
-    </ol>
-  </div>
+  <main class="gd gd--solo">
+    <article class="gd-body">
+      <header class="gd-hero">
+        <span data-mascot="rocket" data-size="130" class="mx-pop"></span>
+        <p class="jx-eyebrow">สำหรับนักเรียน</p>
+        <h1 class="gd-h1">วิธีเล่น</h1>
+        <p class="jx-lead">ใช้แค่ <b>รหัสห้อง</b> กับ <b>ชื่อเล่น</b> ไม่ต้องสมัคร ไม่ต้องโหลดแอป และระบบไม่เก็บชื่อจริง เบอร์ หรืออีเมลของคุณ</p>
+      </header>
 
-  <h2 class="sec">Digital Passport ของคุณ</h2>
-  <p class="lead">บัตรประจำตัวนักเอาตัวรอด — สะสมไปเรื่อยๆ ตลอดเกม</p>
-  <div class="card passport">
-    <div class="pp"><div class="e">⚡</div><b>XP</b><span>คะแนนจากการตัดสินใจดีๆ</span></div>
-    <div class="pp"><div class="e">🎖️</div><b>เลเวล</b><span>มือใหม่ → ผู้รอดชีวิต</span></div>
-    <div class="pp"><div class="e">🏅</div><b>เหรียญตรา</b><span>ปลดล็อกเมื่อจบแต่ละภารกิจ</span></div>
-  </div>
+      <!-- 1 -->
+      <section class="gd-sec" id="join">
+        <h2><span class="gd-no">1</span> เข้าเกมใน 3 ขั้น</h2>
+        <div class="jx-card">
+          <ol class="gd-steps">
+            <li><b>เปิดเว็บ</b> ที่ครูบอก หรือสแกน QR บนจอหน้าห้อง</li>
+            <li><b>กรอกรหัสห้อง 5 ตัว</b> ที่ขึ้นบนจอ แล้ว<b>ตั้งชื่อเล่น</b> — ใช้ชื่อจริงก็ได้ ไม่ใช้ก็ได้</li>
+            <li>ได้<b>รหัสผู้เล่น</b>ของตัวเอง (เช่น P0084) แล้วเข้า<b>ห้องรอ</b> — หน้าจอจะเปลี่ยนเองเมื่อครูกดเริ่ม <b>ไม่ต้องรีเฟรช</b></li>
+          </ol>
+          <div class="sg-code"><span>รหัสห้องหน้าตาแบบนี้</span><b>ABCDE</b></div>
+          <p class="gd-note gd-note--warn" data-icon-before="alert">รหัสห้อง<b>ใช้ได้ครั้งเดียว</b> พอครูปิดห้อง รหัสนั้นจะใช้ไม่ได้อีกเลย รอบหน้าต้องขอรหัสใหม่จากครู</p>
+        </div>
+      </section>
 
-  <h2 class="sec">กิจกรรมมีกี่แบบ?</h2>
-  <div class="card types">
-    <div class="type"><div class="ic">🅰️</div><div><h4>เลือกคำตอบ</h4><p>อ่านสถานการณ์ → แตะตัวเลือก A–E ที่คิดว่าดีที่สุด → กด "ส่งคำตอบ"</p></div></div>
-    <div class="type"><div class="ic">🗂️</div><div><h4>ลากการ์ด (แตะ)</h4><p>แตะการ์ด 1 ใบ แล้วแตะกล่องที่ใช่ · แตะการ์ดในกล่องเพื่อเอากลับ</p></div></div>
-    <div class="type"><div class="ic">🔍</div><div><h4>สืบข่าว จริง/ปลอม</h4><p>แตะเปิด "หลักฐาน" ดูก่อน แล้วตัดสินว่า จริง / ปลอม / หลักฐานไม่พอ</p></div></div>
-    <div class="type"><div class="ic">🔢</div><div><h4>เรียงลำดับ</h4><p>แตะขั้นตอนตามลำดับที่คุณคิดว่าถูก (บอสสุดท้าย)</p></div></div>
-    <div class="type"><div class="ic">⚖️</div><div><h4>ประเมินตัวเอง</h4><p>ตอบตามจริง 0–3 → ดู Digital Habit Profile ของตัวเอง (ไม่มีถูก-ผิด)</p></div></div>
-  </div>
+      <!-- 2 -->
+      <section class="gd-sec" id="tiles">
+        <h2><span class="gd-no">2</span> การ์ดคำตอบ 5 สี 5 รูปทรง</h2>
+        <div class="jx-card">
+          <p>ตัวเลือกบนเครื่องคุณ <b>สีและรูปทรงตรงกับจอหน้าห้องเสมอ</b> ครูจึงพูดได้ว่า “สามเหลี่ยมแดง” แล้วทุกคนเข้าใจตรงกัน</p>
+          <div class="qx-tiles sg-demo" id="tileDemo"></div>
+          <p class="gd-note" data-icon-before="check"><b>แตะการ์ดที่เลือก</b> แล้วกด <b>ส่งคำตอบ</b> อีกที — แตะเฉยๆ ยังไม่ส่ง เปลี่ยนใจได้จนกว่าจะกดส่ง แต่<b>ส่งแล้วแก้ไม่ได้</b></p>
+        </div>
+      </section>
 
-  <h2 class="sec">เคล็ดลับ 💡</h2>
-  <div class="card">
-    <ul class="tips">
-      <li><span class="ic">🧠</span><div><b>คิดก่อนตอบ</b> — คะแนนมาจาก<b>คุณภาพการตัดสินใจ</b> ไม่ใช่ตอบเร็วสุด</div></li>
-      <li><span class="ic">⏱️</span><div><b>ดูเวลาที่มุมบน</b> — แต่ละข้อวิทยากรตั้งเวลาต่างกัน (บางข้อไม่จำกัดเวลา ขึ้น ∞) รีบส่งก่อนหมดเวลา</div></li>
-      <li><span class="ic">👀</span><div><b>ดูจอหน้าห้องประกอบ</b> — สถานการณ์อยู่ที่นั่น · เมื่อวิทยากรเฉลย <b>คำตอบถูก + คำอธิบาย + อันดับคะแนน</b> จะขึ้นบน iPad ของคุณเองด้วย</div></li>
-      <li><span class="ic">✅</span><div><b>ส่งได้ครั้งเดียว</b> ต่อข้อ — เลือกให้มั่นใจก่อนกดส่ง</div></li>
-      <li><span class="ic">🔄</span><div>เน็ตหลุด/จอค้าง? <b>รีเฟรชได้เลย</b> — ระบบจำความคืบหน้าไว้ให้</div></li>
-      <li><span class="ic">🤝</span><div>ไม่มีคำตอบถูก-ผิดตายตัว — <b>ลองคิดว่าถ้าเป็นเรา จะเลือกทำยังไง</b></div></li>
-    </ul>
-  </div>
+      <!-- 3 -->
+      <section class="gd-sec" id="score">
+        <h2><span class="gd-no">3</span> คะแนนมายังไง</h2>
+        <div class="jx-card">
+          <p><b>ตอบถูกได้คะแนน และยิ่งตอบเร็วยิ่งได้เยอะ</b> — ดูเลข XP มุมขวาบน มันจะค่อยๆ ลดลงเรื่อยๆ ตอนเวลาเดิน เลขที่เห็นตอนกดส่ง คือเลขที่คุณได้จริง</p>
+          <table class="gd-tbl">
+            <thead><tr><th>ตอบเมื่อ (จากเวลา 45 วินาที)</th><th>ได้</th></tr></thead>
+            <tbody>
+              <tr><td>ทันที</td><td>1,000 XP</td></tr>
+              <tr><td>11 วินาที</td><td>850 XP</td></tr>
+              <tr><td>22 วินาที</td><td>710 XP</td></tr>
+              <tr><td>เกือบหมดเวลา</td><td>400 XP</td></tr>
+              <tr><td>ตอบผิด</td><td>0 XP</td></tr>
+            </tbody>
+          </table>
+          <p class="gd-note" data-icon-before="bulb"><b>ไม่ต้องรีบจนพลาด</b> — ต่อให้คิดจนเกือบหมดเวลา ถ้าตอบถูกก็ยังได้ 400 XP แต่ถ้าเดาเร็วแล้วผิด ได้ 0 · คิดให้ทันแล้วค่อยกด คุ้มกว่าเสมอ</p>
+        </div>
+      </section>
 
-  <div class="quote">"การเป็น Digital Citizen ไม่ใช่การรู้ทุกอย่าง<br>แต่คือการรู้ว่าเมื่อไรควร <b>หยุด · คิด · ตรวจสอบ · รับผิดชอบ</b>"</div>
-</div>
+      <!-- 4 -->
+      <section class="gd-sec" id="passport">
+        <h2><span class="gd-no">4</span> บัตรผ่านของคุณ</h2>
+        <div class="gd-grid">
+          <div class="jx-card gd-role">
+            <span data-mascot="star" data-size="62"></span>
+            <h3>XP</h3><p>คะแนนสะสมจากทุกข้อที่ตอบถูก</p>
+          </div>
+          <div class="jx-card gd-role">
+            <span data-mascot="medal" data-size="62" data-tone="pink"></span>
+            <h3>เลเวล</h3><p>มือใหม่ → ผู้เรียนรู้ → ผู้เชี่ยวชาญ → ผู้พิชิต → แชมป์สนาม</p>
+          </div>
+          <div class="jx-card gd-role">
+            <span data-mascot="shield" data-size="62"></span>
+            <h3>เหรียญตรา</h3><p>ปลดล็อกเมื่อเล่นจบแต่ละภารกิจ</p>
+          </div>
+          <div class="jx-card gd-role">
+            <span data-mascot="bolt" data-size="62"></span>
+            <h3>แถบระดับ</h3><p>บอกว่าอีกกี่ XP จะขึ้นระดับถัดไป</p>
+          </div>
+        </div>
+      </section>
 
-<script>
-(function(){var r=document.documentElement,K='ds-theme';try{r.setAttribute('data-theme',localStorage.getItem(K)||'dark')}catch(e){r.setAttribute('data-theme','dark')}
-document.getElementById('tt').addEventListener('click',function(){var n=r.getAttribute('data-theme')==='light'?'dark':'light';r.setAttribute('data-theme',n);try{localStorage.setItem(K,n)}catch(e){}});})();
-</script>
+      <!-- 5 -->
+      <section class="gd-sec" id="types">
+        <h2><span class="gd-no">5</span> คำถามมี 5 แบบ</h2>
+        <div class="jx-card">
+          <div class="gd-types">
+            <div><b>เลือกคำตอบ</b><span>อ่านสถานการณ์ แล้วแตะการ์ดที่คิดว่าดีที่สุด</span></div>
+            <div><b>สืบข่าวจริง/ปลอม</b><span>แตะเปิดหลักฐานดูก่อน แล้วค่อยตัดสิน</span></div>
+            <div><b>จับคู่ลงกล่อง</b><span>แตะการ์ด แล้วแตะกล่องที่ใช่ · แตะการ์ดในกล่องเพื่อเอากลับ</span></div>
+            <div><b>เรียงลำดับ</b><span>แตะขั้นตอนทีละอันตามลำดับที่ควรทำ</span></div>
+            <div><b>ประเมินตนเอง</b><span>ตอบตามจริง ไม่มีถูกผิด ทุกคนได้คะแนนเท่ากัน</span></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 6 -->
+      <section class="gd-sec" id="tips">
+        <h2><span class="gd-no">6</span> เคล็ดลับ</h2>
+        <div class="jx-card">
+          <ul class="gd-list">
+            <li><b>ดูจอหน้าห้องประกอบ</b> — โจทย์เต็มๆ อยู่ที่นั่น ส่วนเครื่องคุณไว้กด</li>
+            <li><b>พอครูเฉลย</b> คำตอบที่ถูก คำอธิบาย และอันดับคะแนน จะขึ้นบนเครื่องคุณเองด้วย</li>
+            <li><b>เน็ตหลุดหรือจอค้าง รีเฟรชได้เลย</b> — ระบบจำความคืบหน้าไว้ให้</li>
+            <li><b>ไม่มีคำตอบถูกตายตัวเสมอไป</b> — ลองคิดว่า “ถ้าเป็นเรา จะเลือกทำยังไง”</li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- 7 -->
+      <section class="gd-sec" id="help">
+        <h2><span class="gd-no">7</span> ติดปัญหา?</h2>
+        <div class="jx-card gd-qa">
+          <details open>
+            <summary>ค้างที่ “กำลังเชื่อมต่อ” ไม่ไปไหนเลย</summary>
+            <p>มักเกิดตอนเปิดลิงก์<b>ในแอป</b> เช่น LINE กล้อง หรือ IG ซึ่งบล็อกที่เก็บข้อมูลเข้าสู่ระบบ — แตะปุ่มแชร์มุมจอ แล้วเลือก <b>“เปิดใน Safari”</b> หรือปิดโหมดการเรียกดูแบบส่วนตัว แล้วเข้าห้องใหม่</p>
+          </details>
+          <details>
+            <summary>หลุดออกจากห้อง แล้วเข้าใหม่ไม่ได้</summary>
+            <p>กลับไปหน้าแรกแล้วกรอกรหัสห้องอีกครั้ง ระบบจะถามว่าจะออกจากห้องเดิมไหม ตอบ <b>“ออกแล้วเข้าห้องใหม่”</b> แล้วเล่นต่อได้เลย</p>
+          </details>
+          <details>
+            <summary>กรอกรหัสแล้วขึ้นว่า “ห้องนี้จบไปแล้ว”</summary>
+            <p>ครูปิดห้องนั้นไปแล้ว และรหัสห้องใช้ได้ครั้งเดียว — <b>ขอรหัสใหม่จากครู</b>ได้เลย</p>
+          </details>
+          <details>
+            <summary>อยากลองเล่นเองก่อน</summary>
+            <p>เข้า <a href="community.html">คลังเกม</a> แล้วกด “เล่นคนเดียว” ได้ทุกเกม ไม่ต้องมีรหัสห้องและไม่ต้องสมัคร</p>
+          </details>
+        </div>
+      </section>
+
+      <section class="gd-sec">
+        <div class="jx-card jx-cta">
+          <span data-mascot="owl" data-size="100"></span>
+          <div>
+            <h2 style="margin:0;font-family:var(--font-display);font-size:1.5rem">มีรหัสห้องแล้วใช่ไหม</h2>
+            <p class="jx-lead" style="margin-top:8px">ไปหน้าแรกแล้วกรอกรหัสได้เลย</p>
+            <div class="jx-hero__cta" style="margin-top:16px;justify-content:flex-start">
+              <a class="ds-btn ds-btn--primary" href="index.html">ไปกรอกรหัสห้อง</a>
+              <a class="ds-btn ds-btn--ghost" href="community.html">ลองเล่นคนเดียวก่อน</a>
+            </div>
+          </div>
+        </div>
+      </section>
+    </article>
+  </main>
+
+  <footer class="jx-foot">JDKS <b>Arena</b> — สนามแข่งแห่งการเรียนรู้</footer>
+
+<script type="module" src="js/ui.js"></script>
+<script type="module" src="js/topbar.js"></script>
+<script type="module" src="js/mascot.js"></script>
+<script type="module" src="js/guide.js"></script>
+</body>
+</html>
