@@ -9,6 +9,7 @@ import { submitAnswer } from './session.js';
 import { icon } from './icons.js';
 import { speedFactor, xpForAnswer } from './scoring.js';
 import { mascot } from './mascot.js';
+import { toast } from './dialog.js';
 
 /* Answer tiles: one saturated colour + one shape per slot, so a student can
    shout "เขียวสี่เหลี่ยม!" across the room and everyone knows which one. */
@@ -415,9 +416,25 @@ async function doSubmit(ctx, submit, build, onDone) {
   const { choice, isCorrect } = build();
   const responseMs = Math.max(0, Date.now() - numTime(session.questionStartAt));
   if (!ctx.solo) {
-    try {
-      await submitAnswer(ctx.stored, { questionId: q.id, missionId: q.missionId, choice, isCorrect, responseMs });
-    } catch (_e) { /* offline → queued by persistence */ }
+    // Firestore's offline persistence is deliberately off (it hangs on some
+    // iOS Safari devices), so a failed write is NOT retried for us. Two cases
+    // have to be told apart:
+    //   rejected  → it will never land. Don't pretend it was sent.
+    //   still slow → the SDK holds it in memory and flushes on reconnect, so
+    //                carry on rather than making the student stare at a
+    //                disabled button while the bell rings.
+    let failed = null;
+    const write = submitAnswer(ctx.stored, {
+      questionId: q.id, missionId: q.missionId, choice, isCorrect, responseMs,
+    }).catch((e) => { failed = e; });
+    await Promise.race([write, new Promise((r) => setTimeout(r, 5000))]);
+    if (failed) {
+      submit.disabled = false;
+      submit.textContent = 'ส่งอีกครั้ง';
+      toast('ส่งคำตอบไม่สำเร็จ — ตรวจสัญญาณแล้วกดส่งอีกครั้ง', 'error');
+      try { console.error('[JDKS Arena submit]', failed); } catch (_e) {}
+      return;
+    }
   }
   markSubmitted(ctx, subKey(ctx, q.id), choice, isCorrect, responseMs);
   ctx.sub = { choice, isCorrect, responseMs };

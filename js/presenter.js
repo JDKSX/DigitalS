@@ -49,7 +49,11 @@ async function main() {
     if (!s) return;
     if (s.brand && !brandPainted) { brandPainted = true; applyBrand(s.brand); }
     lastSession = s; render(s);
-  }, () => {});
+  }, (err) => {
+    // A dead listener used to leave the projector frozen on whatever it drew
+    // last, with the class watching a screen that would never change again.
+    fatal('จอฉายหลุดการเชื่อมต่อ', `${(err && err.message) || 'เชื่อมต่อห้องไม่ได้'} — รีเฟรชหน้านี้เพื่อต่อใหม่`);
+  });
   listenLeaderboard(session.id, (arr) => {
     lb = arr;
     if (!lastSession) return;
@@ -387,4 +391,9 @@ function startTimer(s) {
   tick(); timerIv = setInterval(tick, 250);
 }
 
-main();
+main().catch((e) => {
+  // Nothing below main() catches, and a projector that fails silently is worse
+  // than one that says what happened.
+  try { console.error('[JDKS Arena presenter]', e); } catch (_e) {}
+  fatal('เปิดจอฉายไม่สำเร็จ', (e && e.message) || 'ไม่ทราบสาเหตุ — รีเฟรชหน้านี้อีกครั้ง');
+});

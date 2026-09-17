@@ -155,8 +155,11 @@ export async function touchPresence(docId) {
 }
 
 /* ---------- STUDENT: submit an answer (write-once) ---------- */
-/** Writes answers/{sessionId_playerId_questionId}. Deterministic id +
-    immutable rule prevent duplicates. Works offline (queued by persistence). */
+/** Writes answers/{sessionId_playerId_questionId}. The deterministic id plus
+    the immutable rule prevent duplicates. Firestore's disk persistence is off
+    (see js/firebase.js), so an offline write is held in memory only while the
+    tab stays open — the caller must handle a rejection rather than assume the
+    SDK will retry it later. */
 export async function submitAnswer(stored, { questionId, missionId, choice, isCorrect, responseMs }) {
   const uid = auth.currentUser && auth.currentUser.uid;
   const ref = doc(db, COLL.answers, `${stored.sessionId}_${stored.playerId}_${questionId}`);

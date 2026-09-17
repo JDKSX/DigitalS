@@ -393,7 +393,9 @@ function showOffline() {
   if (offlineEl) return;
   offlineEl = document.createElement('div');
   offlineEl.className = 'offline-banner';
-  offlineEl.innerHTML = `${icon('wifiOff')} <span>การเชื่อมต่อหลุด — ระบบกำลังเก็บความคืบหน้าไว้ให้ และจะซิงก์เมื่อกลับมาออนไลน์</span>`;
+  // Honest wording: with disk persistence off, the queue lives in this tab
+  // only. Closing or reloading the page while offline loses it.
+  offlineEl.innerHTML = `${icon('wifiOff')} <span>การเชื่อมต่อหลุด — <b>อย่าเพิ่งปิดหน้านี้</b> ระบบจะส่งคำตอบให้เองเมื่อกลับมาออนไลน์</span>`;
   document.body.appendChild(offlineEl);
 }
 function hideOffline() { if (offlineEl) { offlineEl.remove(); offlineEl = null; } }
