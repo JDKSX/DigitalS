@@ -64,8 +64,8 @@ export async function loadGame(packId) {
   return loadLegacy();
 }
 
-/* Legacy helpers: bundled content only (no pack). The old admin page still
-   uses these; game screens should call loadGame(packId) instead. */
+/* Legacy helpers: bundled content only (no pack). Kept for sessions created
+   before packs existed; game screens should call loadGame(packId) instead. */
 export async function loadContent() { return (await loadLegacy()).content; }
 export async function loadQuestions() { return (await loadLegacy()).questions; }
 

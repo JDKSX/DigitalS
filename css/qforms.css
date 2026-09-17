@@ -1,0 +1,62 @@
+/* =================================================================
+   Question form controls — JDKS ARENA
+   Used by js/qforms.js inside each mission card of the pack editor.
+   Split out of the old admin stylesheet when the admin page was
+   removed, and restyled to match the rest of the platform.
+   ================================================================= */
+
+.qcard {
+  background: var(--card-bg); border: 2px solid var(--line); border-radius: var(--r-md);
+  padding: 16px; margin-bottom: 14px; box-shadow: var(--shadow-1);
+}
+.qc-head { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; flex-wrap: wrap; }
+.qc-head b { font-family: var(--font-display); font-size: 1rem; }
+.qc-del {
+  display: inline-flex; align-items: center; gap: 6px; margin-left: auto; cursor: pointer;
+  padding: 7px 14px; border-radius: var(--r-pill); font-size: .84rem; font-weight: 700;
+  background: var(--danger-bg); border: 2px solid var(--danger); color: var(--danger);
+  font-family: var(--font-body);
+}
+.qc-del:active { transform: translateY(2px); }
+.qc-del .ds-ico { width: 15px; height: 15px; }
+
+.qf-label {
+  display: block; font-family: var(--font-display); font-size: .85rem; font-weight: 600;
+  color: var(--text-muted); margin: 14px 0 6px;
+}
+.qf-in, .qf-area, .qf-sel {
+  width: 100%; padding: 11px 13px; border-radius: var(--r-sm);
+  background: var(--bg-600); border: 2px solid var(--line-strong); color: var(--text);
+  font-family: var(--font-body); font-size: .96rem; line-height: 1.55;
+}
+.qf-area { min-height: 70px; resize: vertical; }
+.qf-in:focus, .qf-area:focus, .qf-sel:focus {
+  outline: none; border-color: var(--electric);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--electric) 20%, transparent);
+}
+.qf-num { width: 120px; }
+.qf-row2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; }
+
+.qf-opts { display: flex; flex-direction: column; gap: 9px; }
+.qf-opt { display: flex; align-items: center; gap: 9px; }
+.qf-opt .qf-in, .qf-opt .qf-sel { flex: 1; min-width: 0; }
+.qf-key {
+  flex: none; width: 34px; height: 34px; border-radius: 11px; display: grid; place-items: center;
+  background: var(--bg-500); color: var(--text-muted);
+  font-family: var(--font-display); font-weight: 700; font-size: .88rem;
+}
+.qf-radio { flex: none; width: 22px; height: 22px; accent-color: var(--electric); cursor: pointer; }
+.qf-x {
+  flex: none; width: 36px; height: 36px; display: grid; place-items: center; cursor: pointer;
+  border-radius: var(--r-sm); background: var(--bg-600); border: 2px solid var(--line-strong);
+  color: var(--text-dim);
+}
+.qf-x:hover { border-color: var(--danger); color: var(--danger); }
+.qf-x .ds-ico { width: 15px; height: 15px; }
+
+.qf-addbtn {
+  margin-top: 10px; padding: 9px 16px; border-radius: var(--r-pill); cursor: pointer;
+  background: var(--bg-600); border: 2px dashed var(--line-strong); color: var(--text-muted);
+  font-family: var(--font-display); font-weight: 600; font-size: .9rem;
+}
+.qf-addbtn:hover { border-color: var(--electric); color: var(--electric); }

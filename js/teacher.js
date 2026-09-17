@@ -9,9 +9,11 @@ import {
   listMyPacks, listPublicPacks, createPack, deletePack,
   setVisibility, starterPackData,
 } from './packs.js';
-import { listMySessions, setSessionStatus } from './session.js';
+import { listMySessions, setSessionStatus, getPlayers } from './session.js';
+import { loadGame } from './content.js';
+import { exportCSV, exportXLSX } from './export.js';
 import { startIdleTimer } from './idle.js';
-import { dxConfirm, dxPrompt, toast } from './dialog.js';
+import { dxConfirm, dxPrompt, dxChoose, toast } from './dialog.js';
 import { applyBrand } from './branding.js';
 
 const $ = (s) => document.querySelector(s);
@@ -180,6 +182,7 @@ function renderRooms(panel) {
     return;
   }
   panel.innerHTML = `<div class="jx-grid jx-grid--2">${state.rooms.map(roomCard).join('')}</div>`;
+  panel.querySelectorAll('[data-export]').forEach((b) => b.addEventListener('click', () => exportRoom(b)));
   panel.querySelectorAll('[data-close]').forEach((b) => b.addEventListener('click', async () => {
     if (!await dxConfirm({
       title: 'ปิดห้องนี้?',
@@ -206,11 +209,49 @@ function roomCard(s) {
     <div class="jx-pack__meta"><span class="jx-chip">${esc(when)}</span></div>
     <div class="jx-pack__acts">
       ${open ? `<a class="ds-btn ds-btn--primary" href="host.html">กลับเข้าห้อง</a>
-                <a class="ds-btn ds-btn--ghost" href="presenter.html?s=${encodeURIComponent(s.code)}" target="_blank" rel="noopener">จอฉาย</a>
-                <button class="ds-btn ds-btn--ghost jx-danger" data-close="${s.id}">ปิดห้อง</button>`
-              : '<span class="ds-muted" style="font-size:.9rem">ห้องนี้จบแล้ว</span>'}
+                <a class="ds-btn ds-btn--ghost" href="presenter.html?s=${encodeURIComponent(s.code)}" target="_blank" rel="noopener">จอฉาย</a>` : ''}
+      <button class="ds-btn ds-btn--ghost" data-export="${s.id}" data-code="${esc(s.code)}" data-pack="${esc(s.packId || '')}">ส่งออกคะแนน</button>
+      ${open ? `<button class="ds-btn ds-btn--ghost jx-danger" data-close="${s.id}">ปิดห้อง</button>` : ''}
     </div>
   </article>`;
+}
+
+/* ---------------- export one room's scores ---------------- */
+/** Read that room's players and its pack, then hand the teacher a file.
+    Nothing is exported for a room nobody joined — saying so is more use
+    than downloading an empty sheet. */
+async function exportRoom(btn) {
+  const sid = btn.dataset.export;
+  const code = btn.dataset.code || 'room';
+  const label = btn.textContent;
+  btn.disabled = true; btn.textContent = 'กำลังรวบรวม…';
+  try {
+    const [players, game] = await Promise.all([
+      getPlayers(sid),
+      loadGame(btn.dataset.pack || null),
+    ]);
+    if (!players.length) {
+      toast(`ห้อง ${code} ไม่มีใครเข้าร่วม จึงไม่มีคะแนนให้ส่งออก`, 'error');
+      return;
+    }
+    const pick = await dxChoose({
+      title: `ส่งออกคะแนนห้อง ${code}`,
+      message: `มีผู้เล่น ${players.length} คนในห้องนี้ — เลือกรูปแบบไฟล์`,
+      options: [
+        { id: 'xlsx', label: 'Excel (.xlsx)', hint: 'เปิดใน Excel หรือ Numbers ได้เลย', icon: 'chart' },
+        { id: 'csv', label: 'CSV (.csv)', hint: 'ไฟล์ข้อความ นำเข้าโปรแกรมอื่นได้', icon: 'book' },
+      ],
+    });
+    if (!pick) return;
+    const name = `jdks-arena-${code}`;
+    if (pick === 'xlsx') await exportXLSX(players, game.content, name);
+    else exportCSV(players, game.content, name);
+    toast(`ส่งออกคะแนนห้อง ${code} แล้ว (${players.length} คน)`, 'success');
+  } catch (e) {
+    toast('ส่งออกไม่สำเร็จ: ' + ((e && e.message) || e), 'error');
+  } finally {
+    btn.disabled = false; btn.textContent = label;
+  }
 }
 
 /* ---------------- bits ---------------- */

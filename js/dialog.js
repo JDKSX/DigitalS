@@ -115,6 +115,26 @@ export function dxPrompt({ title, message = '', label = '', value = '', placehol
   });
 }
 
+/** A short list of choices. Resolves the chosen option's id, or null. */
+export function dxChoose({ title, message = '', options = [], cancel = 'ยกเลิก' } = {}) {
+  return open({
+    kind: 'question', title, message,
+    body: `<div class="dx__choices">${options.map((o) => `
+      <button class="dx__choice" type="button" data-choice="${esc(o.id)}">
+        <span class="dx__choice__ic">${icon(o.icon || 'sparkles')}</span>
+        <span><b>${esc(o.label)}</b>${o.hint ? `<small>${esc(o.hint)}</small>` : ''}</span>
+      </button>`).join('')}</div>`,
+    actions: `<button class="ds-btn ds-btn--ghost" data-dx="no" type="button">${esc(cancel)}</button>`,
+    wire: ({ root, close }) => {
+      root.querySelector('[data-dx="no"]').addEventListener('click', () => close(null));
+      root.querySelectorAll('[data-choice]').forEach((b) =>
+        b.addEventListener('click', () => close(b.dataset.choice)));
+      const first = root.querySelector('[data-choice]');
+      if (first) first.focus();
+    },
+  });
+}
+
 /* ---------------- toasts ---------------- */
 let toastEl = null, toastTimer = null;
 /** A short status line. kind: info | success | error */

@@ -188,6 +188,13 @@ export function listenPlayer(docId, cb, onErr) {
 }
 
 /** HOST: live list of all players in a session (reads scale with players — host only). */
+/** Every player in a room, read once. Used when exporting scores — the
+    host's own rules let them read the player documents of their sessions. */
+export async function getPlayers(sessionId) {
+  const snap = await getDocs(query(collection(db, COLL.users), where('sessionId', '==', sessionId)));
+  return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+}
+
 export function listenPlayers(sessionId, cb, onErr) {
   return onSnapshot(
     query(collection(db, COLL.users), where('sessionId', '==', sessionId)),
