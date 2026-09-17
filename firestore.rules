@@ -109,6 +109,18 @@ service cloud.firestore {
       allow write: if isStaff() || (signedIn() && sessionHost(sessionId) == uid());
     }
 
+    // ---- a room's own copy of the question pack ----
+    // Students cannot read packs/{packId}: a teacher's pack is private by
+    // default, and making it public just to run a lesson is the wrong trade.
+    // So the host copies the pack here when the room opens — the same
+    // snapshot idea as sessions/{id}.brand. It also freezes the questions
+    // for the duration of the room, and it is a separate document so the
+    // content does not ride along on every session-doc update.
+    match /sessionContent/{sessionId} {
+      allow read: if signedIn();
+      allow write: if isStaff() || (signedIn() && sessionHost(sessionId) == uid());
+    }
+
     // ---- stats: volatile counts for the presenter; written by that session's host ----
     match /stats/{sessionId} {
       allow read: if signedIn();

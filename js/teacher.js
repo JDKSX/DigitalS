@@ -260,7 +260,7 @@ async function exportRoom(btn) {
   try {
     const [players, game] = await Promise.all([
       getPlayers(sid),
-      loadGame(btn.dataset.pack || null),
+      loadGame(btn.dataset.pack || null, sid),   // the room's own copy — mission names as they were played
     ]);
     if (!players.length) {
       toast(`ห้อง ${code} ไม่มีใครเข้าร่วม จึงไม่มีคะแนนให้ส่งออก`, 'error');

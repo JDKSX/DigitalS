@@ -39,5 +39,6 @@ export const COLL = {
   teachers: 'teachers',         // teachers/{uid} — self-serve teacher profile
   packs: 'packs',               // packs/{packId} — question packs owned by a teacher
   stats: 'stats',               // stats/{sessionId} — volatile counts (presenter-only, off the students' fan-out)
+  sessionContent: 'sessionContent', // sessionContent/{sessionId} — the room's own frozen copy of its pack
   settings: 'settings',
 };

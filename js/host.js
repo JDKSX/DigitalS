@@ -79,10 +79,14 @@ onAuth(async (user) => {
   renderCreate();
 });
 
-/** Load a pack's content once. Safe to call repeatedly. */
-async function ensureGameLoaded(packId) {
-  if (state.packId === packId && state.content) return;
-  const g = await loadGame(packId);
+/** Load this room's content once. Safe to call repeatedly.
+    The sessionId matters: the room's frozen copy is what the students are
+    playing, so the console has to read the same thing, or the two ends drift
+    apart the moment the teacher edits the pack. */
+async function ensureGameLoaded(packId, sessionId = null) {
+  if (state.packId === packId && state.contentSid === sessionId && state.content) return;
+  const g = await loadGame(packId, sessionId);
+  state.contentSid = sessionId;
   state.packId = packId;
   state.content = g.content;
   state.questions = g.questions;
@@ -142,7 +146,7 @@ function attachSession(sid) {
 
   unsubSession = listenSession(sid, async (s) => {
     if (!s) { forgetRoom(); return; }
-    try { await ensureGameLoaded(s.packId || null); }
+    try { await ensureGameLoaded(s.packId || null, sid); }
     catch (_e) { state.content = state.content || { missions: [], levels: [], badges: [], xpRules: {} }; }
     if (!ready) { ready = true; clearTimeout(watchdog); renderMissions(); }
     state.session = s;

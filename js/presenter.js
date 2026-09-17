@@ -40,7 +40,7 @@ async function main() {
   try { session = await findSessionByCode(code); } catch (_e) {}
   if (!session) return fatal('ไม่พบเซสชัน', `รหัส ${code.toUpperCase()} ไม่ถูกต้อง หรือห้องปิดแล้ว`);
 
-  const game = await loadGame(session.packId || null);
+  const game = await loadGame(session.packId || null, session.id);
   content = game.content; questions = game.questions;
 
   // The room carries the teacher's brand as a snapshot; paint it once.

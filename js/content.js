@@ -8,7 +8,8 @@
 import { db, COLL } from './firebase.js';
 import { doc, getDoc } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
 
-const _packs = Object.create(null);   // packId -> { content, questions }
+const _packs = Object.create(null);   // packId    -> { content, questions }
+const _rooms = Object.create(null);   // sessionId -> { content, questions }
 let _legacy = null;                   // bundled-JSON fallback
 
 function bundleFromPack(p) {
@@ -53,13 +54,35 @@ async function loadLegacy() {
   return _legacy;
 }
 
+/** A room's frozen copy of its pack (cached for the life of the page). */
+export async function loadSessionContent(sessionId) {
+  if (_rooms[sessionId]) return _rooms[sessionId];
+  const snap = await getDoc(doc(db, COLL.sessionContent, sessionId));
+  if (!snap.exists()) throw new Error('ห้องนี้ยังไม่มีสำเนาชุดคำถาม');
+  const bundle = bundleFromPack({ id: snap.data().packId || null, ...snap.data() });
+  _rooms[sessionId] = bundle;
+  return bundle;
+}
+
 /** Everything a screen needs for one game: { content, questions }.
-    Never rejects — falls back to the bundled content so a screen can
-    always render something rather than hanging. */
-export async function loadGame(packId) {
+ *
+ *  The room's own copy comes first and is what every screen must use: a
+ *  teacher's pack is private, so students cannot read packs/{packId} at
+ *  all, and a host reading the pack while students read something else is
+ *  how the two ends end up playing different games. Falling back to the
+ *  pack keeps rooms opened before snapshots existed working, and the
+ *  bundled content keeps the very first Digital Literacy rooms working.
+ *
+ *  Never rejects — a screen can always render something rather than hang.
+ */
+export async function loadGame(packId, sessionId = null) {
+  if (sessionId) {
+    try { return await loadSessionContent(sessionId); }
+    catch (_e) { /* old room, or the snapshot never landed → try the pack */ }
+  }
   if (packId) {
     try { return await loadPack(packId); }
-    catch (_e) { /* pack unreadable (deleted / no access) → fall back */ }
+    catch (_e) { /* pack unreadable (deleted / not ours) → fall back */ }
   }
   return loadLegacy();
 }

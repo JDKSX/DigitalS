@@ -25,9 +25,9 @@ const state = {
 };
 
 /** Load the pack this room plays (once). */
-async function ensureGame(packId) {
+async function ensureGame(packId, sessionId = null) {
   if (state.packId === packId && state.questions && Object.keys(state.questions).length) return;
-  const g = await loadGame(packId);
+  const g = await loadGame(packId, sessionId);
   state.packId = packId;
   state.content = g.content;
   state.questions = g.questions;
@@ -76,7 +76,7 @@ async function main() {
     gotSession = true;
     setConn(true);
     if (s) {
-      try { await ensureGame(s.packId || null); } catch (_e) {}
+      try { await ensureGame(s.packId || null, stored.sessionId); } catch (_e) {}
       if (s.brand && !brandPainted) { brandPainted = true; applyBrand(s.brand); }
     }
     state.session = s;

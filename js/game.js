@@ -467,7 +467,16 @@ function softLock(ctx) {
   const hint = container.querySelector('#qHint'); if (hint) { hint.textContent = 'หมดเวลา — รอวิทยากรเฉลย'; hint.style.color = 'var(--danger)'; }
   const send = container.querySelector('#qSubmit'); if (send) send.textContent = 'หมดเวลาแล้ว';
   if (ctx.solo && ctx.onTimeout) ctx.onTimeout();
-  container.querySelectorAll('.qx-tile, .ds-option, .card-chip, .assess__opt, .bucket__drop').forEach((x) => (x.style.pointerEvents = 'none'));
+  // pointer-events alone only stops a mouse or a finger. The tiles and cards
+  // are real <button>s, so a student on a keyboard — or on switch access or a
+  // screen reader — could still Tab to one and keep answering after the clock
+  // ran out. Disabling them closes both routes and takes them out of the tab
+  // order, which is also what "locked" should sound like to a screen reader.
+  container.querySelectorAll('.qx-tile, .ds-option, .card-chip, .assess__opt, .bucket__drop').forEach((x) => {
+    x.style.pointerEvents = 'none';
+    if ('disabled' in x) x.disabled = true;
+    else x.setAttribute('aria-disabled', 'true');
+  });
 }
 /** Countdown ring + a live XP number that drains as the clock runs, so the
     "ยิ่งเร็วยิ่งได้เยอะ" rule is something students can literally watch. */

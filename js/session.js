@@ -5,9 +5,10 @@
    ================================================================= */
 import { db, COLL } from './firebase.js';
 import { ensureStudentAuth } from './auth.js';
+import { loadPack } from './content.js';
 import { auth } from './firebase.js';
 import {
-  collection, doc, getDocs, setDoc, updateDoc, serverTimestamp,
+  collection, doc, getDocs, setDoc, updateDoc, deleteDoc, serverTimestamp,
   query, where, limit, onSnapshot,
   writeBatch, increment, arrayUnion,
 } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
@@ -65,6 +66,31 @@ export async function createSession(hostUid, { title = 'JDKS Arena', demo = fals
     updatedAt: serverTimestamp(),
   };
   await setDoc(ref, data);
+
+  // Freeze the pack onto the room. Students cannot read a private pack, so
+  // without this they silently fall back to the bundled content and end up
+  // answering different questions from the ones the teacher is reading out.
+  // If the copy cannot be made the room is useless, so take it back down
+  // rather than open a room that plays the wrong game.
+  if (packId) {
+    try {
+      const bundle = await loadPack(packId);
+      await setDoc(doc(db, COLL.sessionContent, ref.id), {
+        packId,
+        hostUid,
+        title:    bundle.content.title || '',
+        missions: bundle.content.missions || [],
+        levels:   bundle.content.levels || [],
+        badges:   bundle.content.badges || [],
+        xpRules:  bundle.content.xpRules || {},
+        questions: bundle.questions || {},
+        createdAt: serverTimestamp(),
+      });
+    } catch (e) {
+      await deleteDoc(ref).catch(() => {});
+      throw new Error('เปิดห้องไม่สำเร็จ — คัดลอกชุดคำถามมาที่ห้องไม่ได้: ' + ((e && e.message) || e));
+    }
+  }
   return { id: ref.id, ...data };
 }
 
