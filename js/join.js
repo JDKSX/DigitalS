@@ -1,16 +1,30 @@
 /* =================================================================
-   Join flow (index.html) — DIGITAL SURVIVAL
+   Join flow (index.html) — JDKS ARENA
    Opens a dialog: session code → nickname → (room) → create player →
    redirect to student.html. Supports QR deep-links (index.html?code=XXXXX).
    ================================================================= */
-import { joinSession, getStoredPlayer } from './session.js';
+import { joinSession, getStoredPlayer, clearStoredPlayer } from './session.js';
+import { dxConfirm } from './dialog.js';
 
 const $ = (s, r = document) => r.querySelector(s);
 
-function openJoin() {
-  // Already joined? go straight in.
+export async function openJoin(prefillCode) {
+  // Already in a room? Ask, don't decide for them. Silently redirecting here is
+  // what used to trap a student whose room had ended: student.html would bounce
+  // them back and the two pages ping-ponged forever.
   const existing = getStoredPlayer();
-  if (existing) { location.href = 'student.html'; return; }
+  const wanted = (prefillCode || new URLSearchParams(location.search).get('code') || '').toUpperCase();
+  if (existing) {
+    const same = existing.code && wanted && existing.code.toUpperCase() === wanted;
+    if (same) { location.href = 'student.html'; return; }
+    const leave = await dxConfirm({
+      title: 'คุณอยู่ในห้องอื่นอยู่',
+      message: `ตอนนี้คุณอยู่ในห้อง ${existing.code || '—'}\nต้องการออกจากห้องนั้นเพื่อเข้าห้องใหม่ไหม?`,
+      ok: 'ออกแล้วเข้าห้องใหม่', cancel: 'กลับเข้าห้องเดิม',
+    });
+    if (!leave) { location.href = 'student.html'; return; }
+    clearStoredPlayer();
+  }
 
   const back = document.createElement('div');
   back.className = 'ds-modal-backdrop';
@@ -51,7 +65,7 @@ function openJoin() {
   const code = $('#jCode', back), nick = $('#jNick', back), room = $('#jRoom', back);
   const err = $('#jErr', back), go = $('#jGo', back);
   // Pre-fill the code when arriving via a QR link (index.html?code=XXXXX)
-  const prefill = new URLSearchParams(location.search).get('code');
+  const prefill = prefillCode || new URLSearchParams(location.search).get('code');
   if (prefill) { code.value = prefill.toUpperCase(); nick.focus(); } else { code.focus(); }
   const close = () => back.remove();
   $('#jCancel', back).addEventListener('click', close);

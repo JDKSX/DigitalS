@@ -3,46 +3,58 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>ผู้เรียน · DIGITAL SURVIVAL</title>
-  <meta name="theme-color" content="#070E1C">
-  <script>try{document.documentElement.setAttribute('data-theme',localStorage.getItem('ds-theme')||'dark')}catch(e){document.documentElement.setAttribute('data-theme','dark')}</script>
+  <title>จอผู้เล่น · JDKS Arena</title>
+  <meta name="theme-color" content="#7C3AED">
+  <script>try{document.documentElement.setAttribute('data-theme',localStorage.getItem('ds-theme')||'light')}catch(e){document.documentElement.setAttribute('data-theme','light')}</script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Kanit:wght@500;600;700&family=Sarabun:wght@400;600;700&family=JetBrains+Mono:wght@600;700&display=swap">
   <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/arena.css">
+  <link rel="stylesheet" href="css/arena-game.css">
   <link rel="stylesheet" href="css/student.css">
 </head>
-<body>
-<div class="app-shell">
-  <header class="app-header">
-    <a class="brand" href="index.html">
-      <span class="brand__logo"><span data-icon="shield"></span></span>
-      <span class="brand__txt"><b>DIGITAL SURVIVAL</b><small>ผู้เรียน · Player</small></span>
+<body class="sp-body">
+  <div class="ds-gridbg" aria-hidden="true"></div>
+
+  <header class="jx-top sp-top">
+    <a class="jx-logo" href="index.html">
+      <span class="jx-logo__mark">JA</span>
+      <span class="jx-logo__name">JDKS <b>Arena</b><span class="jx-logo__tag">จอผู้เล่น</span></span>
     </a>
-    <div class="app-header__right">
-      <span class="role-chip"><span data-icon="id"></span> <b id="hdrPid" style="color:var(--text)">P——</b> <small>player</small></span>
-      <button class="ds-iconbtn" data-role="theme-toggle" type="button" aria-label="สลับธีมสว่าง/มืด" title="สลับธีม">
-        <span class="icon-sun" data-icon="sun"></span><span class="icon-moon" data-icon="moon"></span>
-      </button>
-    </div>
+    <div class="jx-top__spacer"></div>
+    <span class="sp-hdrpid" id="hdrPid">P——</span>
+    <button class="ds-iconbtn" data-role="theme-toggle" type="button" aria-label="สลับธีมสว่าง/มืด" title="สลับธีม">
+      <span class="icon-sun" data-icon="sun"></span><span class="icon-moon" data-icon="moon"></span>
+    </button>
   </header>
 
-  <main class="app-main ds-wrap">
-    <!-- Digital Passport -->
-    <section class="ds-card passport ds-fade-up" aria-label="บัตรผ่านดิจิทัล">
-      <div class="passport__top">
-        <div>
-          <p class="ds-en" style="color:var(--cyan)">Digital Passport</p>
-          <h2 class="passport__name"><span id="pName">รอเข้าร่วม…</span></h2>
-          <p class="ds-pid"><span id="pPid">P——</span><span class="ds-muted" id="pRoom"></span></p>
+  <main class="sp-wrap app-main">
+    <!-- บัตรผ่านนักสู้ -->
+    <section class="sp-card" aria-label="บัตรผ่านของคุณ">
+      <div class="sp-id">
+        <span class="sp-ava" id="pAva" aria-hidden="true"></span>
+        <div class="sp-id__txt">
+          <h1 class="sp-name" id="pName">รอเข้าร่วม…</h1>
+          <p class="sp-meta"><b id="pPid">P——</b><span id="pRoom"></span></p>
         </div>
-        <div style="text-align:right">
-          <div class="ds-stat__num ds-stat__num--xp" id="pXp">0</div>
-          <div class="ds-stat__label">คะแนน XP</div>
+        <div class="sp-xp">
+          <b id="pXp">0</b>
+          <span>XP</span>
         </div>
       </div>
-      <div class="passport__level">
-        <span class="ds-chip"><span data-icon="sparkles"></span> <span id="pLevelNo">เลเวล 01</span> · <span id="pLevelName">มือใหม่ดิจิทัล</span> <span class="ds-en" id="pLevelEn">Digital Rookie</span></span>
+
+      <div class="sp-lvl">
+        <span class="sp-lvl__chip">
+          <span id="pLevelNo">เลเวล 01</span> · <span id="pLevelName">มือใหม่</span>
+          <small class="ds-en" id="pLevelEn">Rookie</small>
+        </span>
+        <span class="sp-lvl__next" id="pLevelNext">เก็บ XP เพื่อเลื่อนระดับ</span>
       </div>
-      <div style="margin-top:16px">
-        <div class="ds-stat__label" style="margin-bottom:8px" id="pProgressLabel">ความคืบหน้าภารกิจ · 0 / 8</div>
+      <div class="sp-lvlbar"><i id="pLevelBar" style="width:0%"></i></div>
+
+      <div class="sp-prog">
+        <div class="sp-prog__l" id="pProgressLabel">ความคืบหน้าภารกิจ · 0 / 8</div>
         <div class="ds-segbar" id="progressBar">
           <i class="ds-segbar__seg"></i><i class="ds-segbar__seg"></i><i class="ds-segbar__seg"></i><i class="ds-segbar__seg"></i>
           <i class="ds-segbar__seg"></i><i class="ds-segbar__seg"></i><i class="ds-segbar__seg"></i><i class="ds-segbar__seg"></i>
@@ -50,29 +62,25 @@
       </div>
     </section>
 
-    <!-- Live area — swaps between waiting room / mission intro / question / result -->
-    <section class="ds-card stage" style="margin-top:20px; min-height:300px" id="stage" aria-live="polite">
-      <div class="ds-empty">
-        <span class="ds-feat ds-feat--violet ds-ico--lg"><span data-icon="network"></span></span>
-        <h3>ห้องรอ <span class="ds-en" style="display:block;margin-top:4px">Waiting Room</span></h3>
-        <p>กำลังโหลด…</p>
-      </div>
+    <!-- เวที: ห้องรอ / เกริ่นภารกิจ / คำถาม / สรุปผล -->
+    <section class="ds-card stage" id="stage" aria-live="polite">
+      <div class="qx-wait"><div class="qx-dots"><i></i><i></i><i></i></div><p class="ds-muted">กำลังเชื่อมต่อ…</p></div>
     </section>
 
-    <!-- Badge collection -->
-    <section class="ds-card" style="margin-top:20px">
-      <div class="ds-heading"><span class="ds-en">Badge Collection</span><h2>เหรียญตราที่สะสม</h2></div>
+    <!-- เหรียญตรา -->
+    <section class="ds-card sp-badges">
+      <div class="sp-sec__h"><h2>เหรียญตราที่สะสม</h2><span class="ds-en">Badge Collection</span></div>
       <div class="badge-grid" id="badgeGrid"></div>
     </section>
   </main>
 
-  <footer class="app-footer">
+  <footer class="sp-foot">
     <span class="ds-status is-wait" id="connStatus"><span class="ds-status__dot"></span><span>กำลังเชื่อมต่อ…</span></span>
-    <a href="index.html">ออกจากภารกิจ <span class="ds-en">Leave</span></a>
+    <a class="sp-leave" href="index.html">ออกจากภารกิจ</a>
   </footer>
-</div>
 
 <script type="module" src="js/ui.js"></script>
+<script type="module" src="js/mascot.js"></script>
 <script type="module" src="js/student.js"></script>
 </body>
 </html>

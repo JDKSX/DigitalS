@@ -1,5 +1,5 @@
 /* =================================================================
-   Presenter / projector screen (presenter.html) — DIGITAL SURVIVAL
+   Presenter / projector screen (presenter.html) — JDKS ARENA
    Read-only mirror of the session state machine, big and legible.
    Opened as presenter.html?s=CODE. Reads only the session doc (counts
    are denormalised there by the host), so it works even when the
@@ -7,8 +7,11 @@
    ================================================================= */
 import { findSessionByCode, listenSession, listenLeaderboard, listenStats } from './session.js';
 import { ensureStudentAuth } from './auth.js';
-import { loadContent, loadQuestions } from './content.js';
+import { loadGame } from './content.js';
 import { audio } from './audio.js';
+import { answerTiles, promptOf } from './game.js';
+import { mascot } from './mascot.js';
+import { icon } from './icons.js';
 
 const $ = (s) => document.querySelector(s);
 const stage = () => $('#stage');
@@ -23,8 +26,7 @@ async function main() {
   if (!code) return fatal('ไม่พบรหัสห้อง', 'เปิดจอฉายจากปุ่ม “เปิดจอฉาย” ในแผงวิทยากร');
 
   try { await ensureStudentAuth(); } catch (_e) {}
-  content = await loadContent().catch(() => ({ missions: [] }));
-  loadQuestions().then((q) => { questions = q || {}; if (lastSession) { lastKey = null; render(lastSession); } }).catch(() => {});
+  // content is resolved after the room is found (it decides which pack to play)
 
   // Localhost-only preview helpers (no Firestore) — registered early so they
   // work even without a real session doc.
@@ -36,6 +38,9 @@ async function main() {
   let session;
   try { session = await findSessionByCode(code); } catch (_e) {}
   if (!session) return fatal('ไม่พบเซสชัน', `รหัส ${code.toUpperCase()} ไม่ถูกต้อง หรือห้องปิดแล้ว`);
+
+  const game = await loadGame(session.packId || null);
+  content = game.content; questions = game.questions;
 
   listenSession(session.id, (s) => { if (s) { lastSession = s; render(s); } }, () => {});
   listenLeaderboard(session.id, (arr) => {
@@ -86,38 +91,47 @@ function lobby(s) {
   const joinUrl = new URL('index.html?code=' + encodeURIComponent(s.code), location.href).href;
   const qr = `https://api.qrserver.com/v1/create-qr-code/?size=360x360&margin=12&data=${encodeURIComponent(joinUrl)}`;
   stage().innerHTML = `
-    <p class="ds-en presenter__eyebrow" style="color:var(--cyan)">Digital Survival · Live</p>
-    <h1 class="presenter__title" style="font-size:clamp(2rem,7vw,4rem)"><span class="ds-ai-text">DIGITAL SURVIVAL</span></h1>
+    <div class="pres-mascot">${mascot('rocket', { size: 120 })}</div>
+    <p class="presenter__eyebrow">JDKS ARENA · LIVE</p>
+    <h1 class="presenter__title" style="font-size:clamp(1.8rem,6vw,3.6rem)">${esc(content.title || 'JDKS Arena')}</h1>
     <p class="presenter__sub">สแกน QR หรือกรอกรหัสห้องเพื่อเข้าเล่น</p>
     <div class="pres-join">
       <div class="pres-qr"><img src="${qr}" alt="QR เข้าเล่น" width="230" height="230"
-        onerror="this.style.display='none'"><span class="pres-qr__cap">📷 สแกนเพื่อเข้าเล่น</span></div>
-      <div class="pres-join__code"><span class="ds-en">รหัสห้อง · session code</span><div class="pres-code">${s.code}</div>
-        <div class="presenter__count"><span class="ds-stat__num" style="font-size:2.2rem">${joinedCount(s)}</span>
-          <span class="ds-muted">ผู้เล่นพร้อมแล้ว</span></div></div>
+        onerror="this.style.display='none'"><span class="pres-qr__cap">${icon('camera')} สแกนเพื่อเข้าเล่น</span></div>
+      <div class="pres-join__code">
+        <span class="pres-join__lbl">รหัสห้อง</span>
+        <div class="pres-code">${s.code}</div>
+        <div class="presenter__count"><b>${joinedCount(s)}</b><span>คนพร้อมแล้ว</span></div>
+      </div>
     </div>`;
 }
 
 function missionIntro(s, m) {
   stage().innerHTML = `
-    <p class="ds-en presenter__eyebrow" style="color:var(--cyan)">Mission ${m ? String(m.no).padStart(2, '0') : ''} · ${m ? m.title : ''}</p>
-    <h1 class="presenter__title" style="font-size:clamp(2.4rem,8vw,5.5rem)">${m ? m.titleTh : ''}</h1>
-    <p class="presenter__sub">${m ? m.topicTh : ''}</p>
-    <p class="pres-intro">${m ? (m.intro || '') : ''}</p>`;
+    <div class="pres-mascot">${mascot('book', { size: 110 })}</div>
+    <p class="presenter__eyebrow">ภารกิจ ${m ? String(m.no).padStart(2, '0') : ''}</p>
+    <h1 class="presenter__title" style="font-size:clamp(2.2rem,7vw,5rem)">${esc(m ? m.titleTh : '')}</h1>
+    <p class="presenter__sub">${esc(m ? m.topicTh : '')}</p>
+    <p class="pres-intro">${esc(m ? (m.intro || '') : '')}</p>`;
 }
 
 function question(s, m) {
+  const q = questions[s.currentQuestion];
   const total = joinedCount(s);
   const ans = answeredCountOf(s);
   const allIn = total > 0 && ans >= total;
+  const text = promptOf(q);
   stage().innerHTML = `
-    <p class="ds-en presenter__eyebrow" style="color:var(--cyan)">${m ? m.title : ''} · ข้อ ${s.questionIndex || 1}</p>
-    <h1 class="presenter__title" style="font-size:clamp(2rem,7vw,4.5rem)">${m ? m.titleTh : 'คำถาม'}</h1>
-    <div class="pres-timer" id="presTimer">--:--</div>
-    <div class="pres-answered ${allIn ? 'is-all' : ''}"><span id="presAns">${ans}</span> / ${total} <span class="ds-muted">ตอบแล้ว</span></div>
+    <p class="ds-en presenter__eyebrow" style="color:var(--cyan)">${m ? esc(m.title) : ''} · ข้อ ${s.questionIndex || 1}</p>
+    <h1 class="presenter__title pres-q">${text ? esc(text) : (m ? esc(m.titleTh) : 'คำถาม')}</h1>
+    <div class="pres-row">
+      <div class="pres-timer" id="presTimer">--:--</div>
+      <div class="pres-answered ${allIn ? 'is-all' : ''}"><span id="presAns">${ans}</span> / ${total} <span class="ds-muted">ตอบแล้ว</span></div>
+    </div>
+    ${answerTiles(q, { big: true })}
     ${allIn
-      ? '<p class="pres-allin">🎉 ทุกคนตอบครบแล้ว!</p>'
-      : '<p class="ds-muted" style="margin-top:8px">อ่านสถานการณ์บนสไลด์ แล้วเลือกคำตอบบน iPad ของคุณ</p>'}`;
+      ? `<p class="pres-allin">${icon('party')} ทุกคนตอบครบแล้ว!</p>`
+      : '<p class="ds-muted" style="margin-top:10px">เลือกคำตอบจากเครื่องของคุณ — สี/รูปทรงตรงกับบนจอ</p>'}`;
   if (s.currentQuestion !== lastStartQ) { lastStartQ = s.currentQuestion; audio.sfx('start'); }
   if (allIn && s.currentQuestion !== lastAllInQ) { lastAllInQ = s.currentQuestion; audio.sfx('allin'); }
   startTimer(s);
@@ -126,8 +140,9 @@ function question(s, m) {
 function locked(s, m) {
   const total = joinedCount(s);
   stage().innerHTML = `
-    <p class="ds-en presenter__eyebrow" style="color:var(--warning)">Answers Locked</p>
-    <h1 class="presenter__title" style="font-size:clamp(2rem,7vw,4.2rem)">ปิดรับคำตอบแล้ว</h1>
+    <div class="pres-mascot">${mascot('clock', { size: 100 })}</div>
+    <p class="presenter__eyebrow presenter__eyebrow--warn">ปิดรับคำตอบ</p>
+    <h1 class="presenter__title" style="font-size:clamp(2rem,7vw,4.2rem)">ล็อกคำตอบแล้ว</h1>
     <div class="pres-answered">${answeredCountOf(s)} / ${total} <span class="ds-muted">ตอบแล้ว</span></div>
     <p class="ds-muted" style="margin-top:8px">เตรียมเฉลย…</p>`;
 }
@@ -142,7 +157,7 @@ function revealed(s, m) {
   let html = `<p class="ds-en presenter__eyebrow" style="color:var(--success)">${eyebrow}${m ? ' · ' + esc(m.title) : ''}</p>`;
   if (wantAns) html += answerCard(q);
   if (wantRes) {
-    html += `<h1 class="presenter__title" style="font-size:clamp(1.4rem,4vw,2.4rem);margin-top:${wantAns ? '10px' : '0'}">🏆 อันดับคะแนน</h1>${podiumBlock()}`;
+    html += `<h1 class="presenter__title" style="font-size:clamp(1.4rem,4vw,2.4rem);margin-top:${wantAns ? '10px' : '0'}">${icon('trophy')} อันดับคะแนน</h1>${podiumBlock()}`;
   }
   if (!wantAns && !wantRes) html += `<h1 class="presenter__title">เฉลยแล้ว</h1><p class="presenter__sub">ดูคำตอบบน iPad ของคุณ</p>`;
   stage().innerHTML = html;
@@ -161,8 +176,11 @@ function answerCard(q) {
   if (!q) return '<p class="presenter__sub">ดูเฉลยบน iPad ของนักเรียน</p>';
   let ans = '';
   if (q.type === 'scenario' || q.type === 'investigation') {
-    const opt = (q.options || []).find((o) => o.key === q.correct);
-    ans = `<b class="ds-pid">${esc(q.correct)}</b> ${esc(opt ? opt.text : '')}`;
+    return `<div class="pres-answer">
+      <div class="pres-answer__lbl">เฉลย</div>
+      ${answerTiles(q, { correct: q.correct, big: true })}
+      ${q.explanation ? `<div class="pres-answer__ex">${esc(q.explanation)}</div>` : ''}
+    </div>`;
   } else if (q.type === 'ordering') {
     ans = (q.correctOrder || []).map((id) => { const st = (q.steps || []).find((x) => x.id === id); return esc(st ? st.text : id); }).join(' → ');
   } else if (q.type === 'dragsort') {
@@ -191,7 +209,7 @@ function podiumBlock() {
   const rest = top.slice(3);
   const ped = (p, rank) => p ? `<div class="ped ped--${rank}">
       <div class="ped__player">
-        ${rank === 1 ? '<div class="ped__crown">👑</div>' : ''}
+        ${rank === 1 ? `<div class="ped__crown">${icon('crown')}</div>` : ''}
         <div class="ped__name">${esc(p.nickname) || '—'}</div>
         <div class="ped__pid ds-mono">${esc(p.playerId)} ${move(p.playerId, rank)}</div>
         <div class="ped__xp" data-xp="${p.xp || 0}">0</div>
@@ -234,7 +252,7 @@ function simple(title, en, sub) {
 function closed(s) {
   if (s && s.finalAnnounce) return finalRanking(s);
   stage().innerHTML = `<h1 class="presenter__title"><span class="ds-ai-text">DIGITAL SURVIVOR</span></h1>
-    <p class="presenter__sub">จบกิจกรรมแล้ว — ขอบคุณทุกคน 🎉</p>
+    <p class="presenter__sub">จบกิจกรรมแล้ว — ขอบคุณทุกคน</p>
     <p class="ds-muted" style="margin-top:10px">เตรียมประกาศผลรวม…</p>`;
 }
 
@@ -250,7 +268,7 @@ function finalRanking(s) {
   const stepChanged = step !== lastStep; lastStep = step;
 
   if (!N) { stage().innerHTML = `<p class="ds-en presenter__eyebrow" style="color:var(--xp)">Final Results</p>
-    <h1 class="presenter__title" style="font-size:clamp(1.8rem,5vw,3rem)">🏆 ประกาศผลรวม</h1>
+    <h1 class="presenter__title" style="font-size:clamp(1.8rem,5vw,3rem)">${icon('trophy')} ประกาศผลรวม</h1>
     <p class="presenter__sub">ยังไม่มีคะแนน</p>`; return; }
 
   if (step >= N) return finalPodium(ranked, stepChanged); // all revealed → celebratory podium
@@ -272,7 +290,7 @@ function finalRanking(s) {
   }).join('');
   stage().innerHTML = `
     <p class="ds-en presenter__eyebrow" style="color:var(--xp)">Final Results · ประกาศทีละอันดับ</p>
-    <h1 class="presenter__title" style="font-size:clamp(1.6rem,4.5vw,2.6rem)">🏆 ลุ้นอันดับคะแนน</h1>
+    <h1 class="presenter__title" style="font-size:clamp(1.6rem,4.5vw,2.6rem)">${icon('trophy')} ลุ้นอันดับคะแนน</h1>
     <p class="presenter__sub" style="font-size:clamp(1rem,2.5vw,1.4rem)">เผยแล้ว ${step} / ${N} อันดับ${step ? '' : ' · เตรียมลุ้น!'}</p>
     <div class="pod-rest" style="max-width:720px;margin:18px auto 0">${rows}</div>`;
   animatePodium();
@@ -284,7 +302,7 @@ function finalPodium(ranked, celebrate) {
   const rest = ranked.slice(3);
   const ped = (p, rank) => p ? `<div class="ped ped--${rank}">
       <div class="ped__player">
-        ${rank === 1 ? '<div class="ped__crown">👑</div>' : ''}
+        ${rank === 1 ? `<div class="ped__crown">${icon('crown')}</div>` : ''}
         <div class="ped__name">${esc(p.nickname) || '—'}</div>
         <div class="ped__pid ds-mono">${esc(p.playerId)}</div>
         <div class="ped__xp" data-xp="${p.xp || 0}">0</div>
@@ -293,13 +311,13 @@ function finalPodium(ranked, celebrate) {
     </div>` : '';
   stage().innerHTML = `
     <p class="ds-en presenter__eyebrow" style="color:var(--xp)">Final Results · ประกาศผลรวม</p>
-    <h1 class="presenter__title" style="font-size:clamp(1.8rem,5vw,3rem)">🏆 อันดับคะแนนสุดท้าย</h1>
+    <h1 class="presenter__title" style="font-size:clamp(1.8rem,5vw,3rem)">${icon('trophy')} อันดับคะแนนสุดท้าย</h1>
     <div class="podium">${ped(p2, 2)}${ped(p1, 1)}${ped(p3, 3)}</div>
     ${rest.length ? `<div class="pod-rest">${rest.map((p, i) => `<div class="pod-row">
       <span class="pod-rank">${i + 4}</span>
       <span class="pod-name">${esc(p.nickname) || '—'} <span class="ds-mono" style="opacity:.55">${esc(p.playerId)}</span></span>
       <span class="pod-xp" data-xp="${p.xp || 0}">0</span></div>`).join('')}</div>` : ''}
-    <p class="ds-muted" style="margin-top:22px">ขอบคุณทุกคนที่ร่วมกิจกรรม 🎉 · <span class="ds-ai-text">DIGITAL SURVIVOR</span></p>`;
+    <p class="ds-muted" style="margin-top:22px">ขอบคุณทุกคนที่ร่วมกิจกรรม</p>`;
   animatePodium();
   if (celebrate !== false) { confetti(); audio.sfx('reveal'); }
 }
