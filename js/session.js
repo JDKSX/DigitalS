@@ -190,17 +190,32 @@ export function listenPlayer(docId, cb, onErr) {
     onErr || (() => {}));
 }
 
-/** HOST: live list of all players in a session (reads scale with players — host only). */
+/* Host-side list queries MUST filter on hostUid.
+   Firestore evaluates a LIST rule against the query's own constraints, not
+   against the documents it would return: any field the rule reads but the
+   query does not filter simply is not there, and the whole query is denied.
+   `users` and `answers` are authorised by hostUid, so every host query below
+   carries that filter. (All-equality filters still use the automatic
+   single-field indexes — no composite index needed.) */
+function hostUid() {
+  const u = auth.currentUser;
+  if (!u) throw new Error('เซสชันหมดอายุ — กรุณาเข้าสู่ระบบอีกครั้ง');
+  return u.uid;
+}
+
 /** Every player in a room, read once. Used when exporting scores — the
     host's own rules let them read the player documents of their sessions. */
 export async function getPlayers(sessionId) {
-  const snap = await getDocs(query(collection(db, COLL.users), where('sessionId', '==', sessionId)));
+  const snap = await getDocs(query(collection(db, COLL.users),
+    where('hostUid', '==', hostUid()), where('sessionId', '==', sessionId)));
   return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
 }
 
+/** HOST: live list of all players in a session (reads scale with players — host only). */
 export function listenPlayers(sessionId, cb, onErr) {
   return onSnapshot(
-    query(collection(db, COLL.users), where('sessionId', '==', sessionId)),
+    query(collection(db, COLL.users),
+      where('hostUid', '==', hostUid()), where('sessionId', '==', sessionId)),
     (snap) => cb(snap.docs.map((d) => ({ id: d.id, ...d.data() }))),
     onErr || (() => {}));
 }
@@ -225,6 +240,7 @@ export function listenStats(sessionId, cb, onErr) {
 export function listenQuestionAnswers(sessionId, questionId, cb, onErr) {
   return onSnapshot(
     query(collection(db, COLL.answers),
+      where('hostUid', '==', hostUid()),
       where('sessionId', '==', sessionId),
       where('questionId', '==', questionId)),
     (snap) => cb(snap.docs.map((d) => ({ id: d.id, ...d.data() }))),
@@ -236,6 +252,7 @@ export function listenQuestionAnswers(sessionId, questionId, cb, onErr) {
 /** One-time read of all answers for a question. */
 export async function getQuestionAnswersOnce(sessionId, questionId) {
   const snap = await getDocs(query(collection(db, COLL.answers),
+    where('hostUid', '==', hostUid()),
     where('sessionId', '==', sessionId), where('questionId', '==', questionId)));
   return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
 }
@@ -243,6 +260,7 @@ export async function getQuestionAnswersOnce(sessionId, questionId) {
 /** Unique playerIds who answered any question in a mission. */
 export async function getMissionPlayers(sessionId, missionId) {
   const snap = await getDocs(query(collection(db, COLL.answers),
+    where('hostUid', '==', hostUid()),
     where('sessionId', '==', sessionId), where('missionId', '==', missionId)));
   return [...new Set(snap.docs.map((d) => d.data().playerId))];
 }
