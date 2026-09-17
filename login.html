@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>เข้าสู่ระบบ · JDKS Arena</title>
+  <meta name="description" content="เข้าสู่ระบบหรือสมัครบัญชีผู้สอนฟรี เพื่อสร้างชุดคำถามของคุณเองและเปิดห้องเรียนแข่งขัน">
+  <meta name="theme-color" content="#7C3AED">
+  <script>try{document.documentElement.setAttribute('data-theme',localStorage.getItem('ds-theme')||'light')}catch(e){document.documentElement.setAttribute('data-theme','light')}</script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Kanit:wght@500;600;700&family=Sarabun:wght@400;600;700&family=JetBrains+Mono:wght@600;700&display=swap">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/arena.css">
+</head>
+<body>
+  <div class="ds-gridbg" aria-hidden="true"></div>
+  <div class="ds-orb" style="top:-180px;right:6%" aria-hidden="true"></div>
+  <div class="ds-orb ds-orb--violet" style="bottom:-220px;left:-6%" aria-hidden="true"></div>
+
+  <header class="jx-top" data-topbar data-noauth data-tag="บัญชีผู้สอน"></header>
+
+  <main class="jx-authpage">
+    <!-- Left: why an account -->
+    <section class="jx-authpage__side">
+      <span data-mascot="owl" data-size="170" class="mx-pop"></span>
+      <h1 class="jx-authpage__h1">สร้างสนามแข่ง<br>ของคุณเอง</h1>
+      <p class="jx-lead">บัญชีผู้สอนใช้ฟรี ไม่มีค่าใช้จ่าย — มีไว้เพื่อเก็บชุดคำถามของคุณและเปิดห้องให้นักเรียนเข้าเล่น</p>
+      <ul class="jx-perks">
+        <li><span data-mascot="book" data-size="42"></span><div><b>ชุดคำถามไม่จำกัด</b><span>สร้างเองทุกวิชา หรือหยิบชุดของครูคนอื่นมาแก้ต่อ</span></div></li>
+        <li><span data-mascot="rocket" data-size="42"></span><div><b>เปิดห้องได้ทันที</b><span>นักเรียนเข้าด้วยรหัส 5 ตัว ไม่ต้องสมัครอะไรเลย</span></div></li>
+        <li><span data-mascot="trophy" data-size="42"></span><div><b>เห็นผลและอันดับสด</b><span>รู้ทันทีว่าข้อไหนยาก ใครนำ และส่งออกคะแนนได้</span></div></li>
+      </ul>
+      <p class="jx-authpage__note">
+        เป็นนักเรียนหรือแค่อยากลองเล่น? <a href="community.html">เข้าคลังเกมได้เลย</a> — ไม่ต้องมีบัญชี
+      </p>
+    </section>
+
+    <!-- Right: the form -->
+    <section class="jx-authpage__card ds-card">
+      <div class="jx-auth__tabs" role="tablist" id="lgTabs">
+        <button class="jx-auth__tab" data-tab="login" type="button" role="tab">เข้าสู่ระบบ</button>
+        <button class="jx-auth__tab" data-tab="signup" type="button" role="tab">สมัครใช้งาน</button>
+      </div>
+
+      <h2 class="jx-auth__title" id="lgTitle">ยินดีต้อนรับกลับ</h2>
+      <p class="ds-muted jx-auth__sub" id="lgSub" style="font-size:.92rem;margin:4px 0 20px">เข้าสู่ระบบเพื่อจัดการชุดคำถามและเปิดห้องเรียน</p>
+
+      <form id="lgForm" novalidate>
+        <div class="ds-form-row" data-only="signup" hidden>
+          <label class="ds-label" for="lgName">ชื่อผู้สอน <span class="ds-en">your name</span></label>
+          <input id="lgName" class="ds-input" autocomplete="name" placeholder="เช่น ครูเจดี">
+        </div>
+        <div class="ds-form-row" data-only="signup" hidden>
+          <label class="ds-label" for="lgOrg">โรงเรียน/หน่วยงาน <span class="ds-en">optional</span></label>
+          <input id="lgOrg" class="ds-input" autocomplete="organization" placeholder="เช่น โรงเรียนตัวอย่างวิทยา">
+        </div>
+        <div class="ds-form-row">
+          <label class="ds-label" for="lgEmail">อีเมล <span class="ds-en">email</span></label>
+          <input id="lgEmail" class="ds-input" type="email" autocomplete="username" inputmode="email" placeholder="teacher@school.ac.th">
+        </div>
+        <div class="ds-form-row">
+          <label class="ds-label" for="lgPass">รหัสผ่าน <span class="ds-en">password</span></label>
+          <div class="jx-pass">
+            <input id="lgPass" class="ds-input" type="password" autocomplete="current-password" placeholder="อย่างน้อย 6 ตัวอักษร">
+            <button class="jx-pass__eye" id="lgEye" type="button" aria-label="แสดง/ซ่อนรหัสผ่าน" title="แสดงรหัสผ่าน"><span data-icon="eye"></span></button>
+          </div>
+        </div>
+
+        <div class="ds-form-err" id="lgErr" hidden></div>
+        <div class="jx-auth__ok" id="lgOk" hidden></div>
+
+        <button class="ds-btn ds-btn--primary ds-btn--block" id="lgGo" type="submit" style="margin-top:20px">เข้าสู่ระบบ</button>
+      </form>
+
+      <div class="jx-auth__foot">
+        <button class="jx-linkbtn" id="lgForgot" type="button" data-only="login">ลืมรหัสผ่าน?</button>
+        <a class="jx-linkbtn" href="index.html">กลับหน้าแรก</a>
+      </div>
+
+      <p class="jx-authpage__legal" data-only="signup" hidden>
+        การสมัครถือว่ายอมรับให้ระบบเก็บอีเมลและชื่อผู้สอนไว้เพื่อใช้งานบัญชีเท่านั้น — ไม่มีการเก็บข้อมูลนักเรียนรายบุคคล
+      </p>
+    </section>
+  </main>
+
+  <footer class="jx-foot">JDKS <b>Arena</b> — สนามแข่งแห่งการเรียนรู้</footer>
+
+<script type="module" src="js/ui.js"></script>
+<script type="module" src="js/topbar.js"></script>
+<script type="module" src="js/mascot.js"></script>
+<script type="module" src="js/login.js"></script>
+</body>
+</html>

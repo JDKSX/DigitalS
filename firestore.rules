@@ -1,88 +1,121 @@
 rules_version = '2';
 // =================================================================
-// DIGITAL SURVIVAL — Firestore Security Rules (Phase 10 hardened)
-// Model: students write ONLY their own answers (immutable) and their own
-// presence (lastSeen). XP / badges / scores are written by staff at reveal
-// — students cannot change them (verified by attack tests §38).
+// JDKS ARENA — Firestore Security Rules (platform / multi-tenant)
+//
+// Model
+//  - teachers/{uid}  : self-serve teacher profile. Owning this doc = you may host.
+//  - packs/{packId}  : question packs owned by a teacher; 'public' packs are readable
+//                      by any signed-in teacher (so they can copy them).
+//  - sessions/{id}   : a live game owned by hostUid.
+//  - users/answers   : student docs. They carry a denormalised hostUid that is
+//                      VERIFIED against the session at create time, so every later
+//                      read/write is a cheap field compare instead of a lookup.
+//  - staff/{uid}     : platform owner (superuser), created by hand in the console.
+//
+// Students never write XP/badges/scores — only the session's host does.
+// Answers remain immutable once written.
 // =================================================================
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    function signedIn() { return request.auth != null; }
-    function isStaff()  { return signedIn() && exists(/databases/$(database)/documents/staff/$(request.auth.uid)); }
-    function role()     { return get(/databases/$(database)/documents/staff/$(request.auth.uid)).data.role; }
-    function isAdmin()  { return isStaff() && role() == 'admin'; }
-    function ownsExisting() { return signedIn() && resource.data.authUid == request.auth.uid; }
+    function signedIn()  { return request.auth != null; }
+    function uid()       { return request.auth.uid; }
+    function isStaff()   { return signedIn() && exists(/databases/$(database)/documents/staff/$(uid())); }
+    function role()      { return get(/databases/$(database)/documents/staff/$(uid())).data.role; }
+    function isAdmin()   { return isStaff() && role() == 'admin'; }
+    function isTeacher() { return signedIn() && exists(/databases/$(database)/documents/teachers/$(uid())); }
 
-    // ---- staff roster: readable by the owner only; managed in console ----
-    match /staff/{uid} {
-      allow read: if signedIn() && request.auth.uid == uid;
-      allow write: if false; // create/manage in Firebase console only
+    // hostUid of a session, used to verify a student's denormalised copy once, at create.
+    function sessionHost(sid) {
+      return get(/databases/$(database)/documents/sessions/$(sid)).data.hostUid;
+    }
+    // the signed-in user hosts the session this document belongs to
+    function isHostOf(res) { return signedIn() && res.data.hostUid == uid(); }
+    function ownsExisting() { return signedIn() && resource.data.authUid == uid(); }
+
+    // ---- teacher profiles: private to the owner; created on sign-up ----
+    match /teachers/{tid} {
+      allow read, write: if signedIn() && uid() == tid;
     }
 
-    // ---- sessions: everyone signed in can read; only staff control ----
+    // ---- platform owner roster: readable by the owner only; console-managed ----
+    match /staff/{sid} {
+      allow read: if signedIn() && uid() == sid;
+      allow write: if false;
+    }
+
+    // ---- question packs ----
+    match /packs/{packId} {
+      allow read: if signedIn() &&
+        (resource.data.ownerUid == uid() || resource.data.visibility == 'public' || isStaff());
+      allow create: if (isTeacher() || isStaff()) && request.resource.data.ownerUid == uid();
+      allow update, delete: if signedIn() && (resource.data.ownerUid == uid() || isAdmin());
+    }
+
+    // ---- sessions: any signed-in user may read (students/presenter); host controls ----
     match /sessions/{sessionId} {
       allow read: if signedIn();
-      allow create: if isStaff() && request.resource.data.hostUid == request.auth.uid;
-      allow update, delete: if isStaff() &&
-        (resource.data.hostUid == request.auth.uid || isAdmin());
+      allow create: if (isTeacher() || isStaff()) && request.resource.data.hostUid == uid();
+      allow update, delete: if signedIn() && (resource.data.hostUid == uid() || isAdmin());
     }
 
     // ---- players ----
     match /users/{docId} {
-      // owner reads own doc; staff read all (dashboard / analytics / leaderboard)
-      allow read: if isStaff() || ownsExisting();
+      // the student themselves, the session's host, or the platform owner
+      allow read: if isStaff() || ownsExisting() || isHostOf(resource);
 
       // student creates own player doc: XP/badges empty, docId must match
-      // sessionId_playerId, and only the known fields are allowed (no junk).
+      // sessionId_playerId, only known fields, and hostUid must match the session.
       allow create: if signedIn()
-        && request.resource.data.authUid == request.auth.uid
+        && request.resource.data.authUid == uid()
         && request.resource.data.xp == 0
         && request.resource.data.badges.size() == 0
         && request.resource.data.sessionId is string
         && request.resource.data.playerId is string
         && request.resource.data.nickname is string
         && docId == request.resource.data.sessionId + '_' + request.resource.data.playerId
+        && request.resource.data.hostUid == sessionHost(request.resource.data.sessionId)
         && request.resource.data.keys().hasOnly([
-             'sessionId','playerId','nickname','room','authUid',
+             'sessionId','hostUid','playerId','nickname','room','authUid',
              'xp','level','progress','missionScores','badges','joinedAt','lastSeen']);
 
-      // student may change ONLY lastSeen (presence). staff may write anything.
-      allow update: if isStaff() || (
+      // host writes scores/badges; the student may only touch lastSeen (presence).
+      allow update: if isStaff() || isHostOf(resource) || (
         ownsExisting()
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['lastSeen'])
       );
 
-      allow delete: if isStaff();
+      allow delete: if isStaff() || isHostOf(resource);
     }
 
-    // ---- answers: write-once by the owner; only known fields ----
+    // ---- answers: write-once by the owner; read by the session's host ----
     match /answers/{answerId} {
-      allow read: if isStaff();
+      allow read: if isStaff() || isHostOf(resource);
       allow create: if signedIn()
-        && request.resource.data.authUid == request.auth.uid
+        && request.resource.data.authUid == uid()
         && answerId == request.resource.data.sessionId + '_' +
              request.resource.data.playerId + '_' + request.resource.data.questionId
+        && request.resource.data.hostUid == sessionHost(request.resource.data.sessionId)
         && request.resource.data.keys().hasOnly([
-             'sessionId','playerId','questionId','missionId',
+             'sessionId','hostUid','playerId','questionId','missionId',
              'choice','isCorrect','responseMs','authUid','submittedAt']);
-      allow update: if false;            // immutable (never editable)
-      allow delete: if isAdmin();        // admin may delete a whole session's data (cleanup)
+      allow update: if false;                                   // immutable
+      allow delete: if isAdmin() || isHostOf(resource);          // session cleanup
     }
 
-    // ---- leaderboards: read by anyone signed in; written by staff only ----
+    // ---- leaderboards: read by anyone signed in; written by that session's host ----
     match /leaderboards/{sessionId} {
       allow read: if signedIn();
-      allow write: if isStaff();
+      allow write: if isStaff() || (signedIn() && sessionHost(sessionId) == uid());
     }
 
-    // ---- stats: volatile counts for the presenter; written by staff only ----
+    // ---- stats: volatile counts for the presenter; written by that session's host ----
     match /stats/{sessionId} {
       allow read: if signedIn();
-      allow write: if isStaff();
+      allow write: if isStaff() || (signedIn() && sessionHost(sessionId) == uid());
     }
 
-    // ---- settings: read-only content/config; admin writes ----
+    // ---- legacy shared content (read-only for everyone; owner maintains) ----
     match /settings/{docId} {
       allow read: if signedIn();
       allow write: if isAdmin();

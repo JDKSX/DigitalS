@@ -1,5 +1,5 @@
 /* =================================================================
-   Idle timer — DIGITAL SURVIVAL
+   Idle timer — JDKS ARENA
    Fires onIdle() after `minutes` with no user interaction. Persists the
    last-activity time so a page refresh does not reset a long idle period
    (e.g. staff auto-logout / student auto-leave after 1 hour of no movement).
