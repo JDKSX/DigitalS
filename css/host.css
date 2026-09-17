@@ -177,7 +177,7 @@
 .host-live--on { color: #fff; background: var(--success); border-color: transparent; }
 
 /* time-per-question picker */
-.host-dur { margin-top: 20px; padding-top: 16px; border-top: 3px dashed var(--line); }
+.host-dur { margin-top: 20px; padding-top: 16px; border-top: 2px dashed var(--line-strong); }
 .host-dur__lbl { display: block; font-family: var(--font-display); font-weight: 700; font-size: .88rem; color: var(--text-muted); margin-bottom: 10px; }
 .host-dur__opts { display: flex; flex-wrap: wrap; gap: 8px; }
 .host-dur__opt {
@@ -186,6 +186,7 @@
   font-family: var(--font-display); font-weight: 600; font-size: .93rem; box-shadow: 0 3px 0 var(--card-lip);
 }
 .host-dur__opt:active { transform: translateY(3px); box-shadow: none; }
+.host-dur__note { margin: 10px 0 0; font-size: .82rem; line-height: 1.6; color: var(--text-dim); max-width: 52ch; }
 .host-dur__opt.is-on { background: var(--electric); color: #fff; border-color: var(--electric); box-shadow: 0 3px 0 #5B21B6; }
 
 /* empty / closing states */

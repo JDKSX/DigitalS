@@ -363,12 +363,20 @@ function renderAnnounceControls(s) {
 }
 
 /* ---------------- duration picker (§วิทยากรกำหนดเวลาต่อข้อ) ---------------- */
+/* "ไม่ตัดเวลา" used to read "ไม่จำกัด", which sounds like the clock stops
+   mattering. It does not: nothing cuts the question off, but the speed bonus
+   still runs against a one-minute assumption, so an answer after a minute
+   scores the same 40% floor as the slowest answer on a timed question. Say
+   that on the button instead of leaving the teacher to discover it. */
 function durationPicker() {
   return `<div class="host-dur">
     <span class="host-dur__lbl">⏱ เวลาตอบต่อข้อ</span>
     <div class="host-dur__opts">
-      ${DURATIONS.map((d) => `<button type="button" class="host-dur__opt ${d === selectedDuration ? 'is-on' : ''}" data-dur="${d}">${d === 0 ? 'ไม่จำกัด' : d + ' วิ'}</button>`).join('')}
+      ${DURATIONS.map((d) => `<button type="button" class="host-dur__opt ${d === selectedDuration ? 'is-on' : ''}" data-dur="${d}">${d === 0 ? 'ไม่ตัดเวลา' : d + ' วิ'}</button>`).join('')}
     </div>
+    <p class="host-dur__note">${selectedDuration === 0
+      ? 'ไม่ปิดรับคำตอบเอง คุณกด “ล็อก” เมื่อพร้อม — แต่คะแนนยังลดตามความเร็วอยู่ ตอบหลังหนึ่งนาทีได้ 40% ของข้อนั้น'
+      : `ปิดรับคำตอบอัตโนมัติเมื่อครบ ${selectedDuration} วินาที · ยิ่งตอบเร็วยิ่งได้คะแนนเยอะ ช้าสุดได้ 40%`}</p>
   </div>`;
 }
 
