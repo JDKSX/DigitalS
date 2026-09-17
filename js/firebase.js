@@ -1,5 +1,5 @@
 /* =================================================================
-   Firebase init — DIGITAL SURVIVAL
+   Firebase init — JDKS ARENA
    Uses Firebase JS SDK v10 (modular) via CDN.
    NOTE: This "apiKey" is a PUBLIC client identifier, not a secret.
    It is safe to commit. Real protection comes from Firestore Security
@@ -36,6 +36,8 @@ export const COLL = {
   users: 'users',
   answers: 'answers',
   leaderboards: 'leaderboards', // leaderboards/{sessionId}
+  teachers: 'teachers',         // teachers/{uid} — self-serve teacher profile
+  packs: 'packs',               // packs/{packId} — question packs owned by a teacher
   stats: 'stats',               // stats/{sessionId} — volatile counts (presenter-only, off the students' fan-out)
   settings: 'settings',
 };

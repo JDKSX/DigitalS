@@ -1,5 +1,5 @@
 /* =================================================================
-   Audio engine — DIGITAL SURVIVAL (presenter only)
+   Audio engine — JDKS ARENA (presenter only)
    • BG music: a gentle looping chord progression (vi–IV–I–V) played as
      soft plucks + bass — musical MOVEMENT, not a flat drone.
    • SFX: short cues for key moments.

@@ -1,5 +1,5 @@
 /* =================================================================
-   Export — DIGITAL SURVIVAL (§31)
+   Export — JDKS ARENA (§31)
    CSV built natively; XLSX via SheetJS lazy-loaded from CDN only when
    requested (keeps the initial page light — §36).
    ================================================================= */
