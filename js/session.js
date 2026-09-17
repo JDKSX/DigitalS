@@ -36,7 +36,7 @@ async function codeEverUsed(code) {
 }
 
 /* ---------- HOST: create a session ---------- */
-export async function createSession(hostUid, { title = 'JDKS Arena', demo = false, packId = null } = {}) {
+export async function createSession(hostUid, { title = 'JDKS Arena', demo = false, packId = null, brand = null } = {}) {
   // A room code is single-use: once a code has existed it is never handed out
   // again, so an old code in a student's history can never reach a live room.
   let code = generateSessionCode();
@@ -48,6 +48,9 @@ export async function createSession(hostUid, { title = 'JDKS Arena', demo = fals
   const data = {
     code, title, demo,
     packId,                         // which question pack this room plays
+    // A snapshot, not a reference: students cannot read teachers/{uid}, and a
+    // teacher who rebrands later should not retroactively change old rooms.
+    brand: brand || null,
     status: 'open',                 // open | closed
     phase: 'lobby',                 // lobby | mission_intro | question_open | locked | revealed | paused
     currentMission: null,

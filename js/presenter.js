@@ -12,6 +12,7 @@ import { audio } from './audio.js';
 import { answerTiles, promptOf } from './game.js';
 import { mascot } from './mascot.js';
 import { icon } from './icons.js';
+import { applyBrand } from './branding.js';
 
 const $ = (s) => document.querySelector(s);
 const stage = () => $('#stage');
@@ -42,7 +43,13 @@ async function main() {
   const game = await loadGame(session.packId || null);
   content = game.content; questions = game.questions;
 
-  listenSession(session.id, (s) => { if (s) { lastSession = s; render(s); } }, () => {});
+  // The room carries the teacher's brand as a snapshot; paint it once.
+  let brandPainted = false;
+  listenSession(session.id, (s) => {
+    if (!s) return;
+    if (s.brand && !brandPainted) { brandPainted = true; applyBrand(s.brand); }
+    lastSession = s; render(s);
+  }, () => {});
   listenLeaderboard(session.id, (arr) => {
     lb = arr;
     if (!lastSession) return;

@@ -11,10 +11,12 @@ import { auth } from './firebase.js';
 import { icon, hydrateIcons } from './icons.js';
 import { renderGame } from './game.js';
 import { mascot } from './mascot.js';
+import { applyBrand } from './branding.js';
 import { startIdleTimer } from './idle.js';
 
 const $ = (s) => document.querySelector(s);
 const fmt = (n) => (n || 0).toLocaleString('en-US');
+let brandPainted = false;
 const state = {
   // start with empty-but-valid content so the first paint cannot crash while
   // the room's pack is still loading
@@ -73,7 +75,10 @@ async function main() {
   listenSession(stored.sessionId, async (s) => {
     gotSession = true;
     setConn(true);
-    if (s) { try { await ensureGame(s.packId || null); } catch (_e) {} }
+    if (s) {
+      try { await ensureGame(s.packId || null); } catch (_e) {}
+      if (s.brand && !brandPainted) { brandPainted = true; applyBrand(s.brand); }
+    }
     state.session = s;
     renderStage();
   }, (err) => { setConn(false, err); showConnHelp(err); });

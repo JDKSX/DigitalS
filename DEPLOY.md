@@ -13,7 +13,7 @@ Static site (no build step). The Firebase web config is already in `js/firebase.
 1. Go to https://github.com/new → create a repo, e.g. **`digital-survival`** (Public) → *Create*.
 2. On the repo page → **Add file → Upload files** → drag **all files & folders** from this project
    (`index.html`, `student.html`, `host.html`, `presenter.html`, `admin.html`, `guide.html`,
-   `student-guide.html`, `firebase-test.html`, and the `css/`, `js/`, `data/` folders,
+   `student-guide.html`, and the `css/`, `js/`, `data/` folders,
    plus `firestore.rules`, `.nojekyll`, `README.md`) → **Commit changes**.
 3. **Settings → Pages** → *Build and deployment* → Source: **Deploy from a branch** →
    Branch: **main** / **/(root)** → **Save**.
@@ -33,7 +33,7 @@ Then do step 3–4 above (Settings → Pages).
 ---
 
 ## After deploy
-- Open **`.../firebase-test.html`** → *เริ่มทดสอบ* → all green.
+- Sign up as a teacher and open a room — a room code means Auth and Firestore are both live.
 - Open **`.../host.html`** → log in → *สร้างเซสชัน* → the **presenter QR** and all
   in-app links automatically use your deployed URL (they are relative).
 - Hand students the URL **`.../index.html`** (or let them scan the QR on the projector).

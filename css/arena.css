@@ -426,6 +426,77 @@ textarea.ds-input { padding-block: 12px; min-height: auto; line-height: 1.6; }
   .jx-solo-progress { top: 64px; }
 }
 
+
+/* Brand settings (settings.html) ----------------------------------- */
+.st-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(260px, 340px); gap: clamp(16px, 3vw, 28px); margin-top: 24px; align-items: start; }
+@media (max-width: 880px) { .st-grid { grid-template-columns: minmax(0, 1fr); } }
+.st-form { padding: clamp(18px, 3vw, 28px); }
+.st-side { display: flex; flex-direction: column; gap: 14px; position: sticky; top: 86px; }
+.st-hint { margin: 7px 0 0; font-size: .84rem; color: var(--text-dim); line-height: 1.6; }
+
+.st-swatches { display: flex; flex-wrap: wrap; gap: 10px; }
+.st-sw {
+  width: 46px; height: 46px; border-radius: 15px; cursor: pointer; padding: 0;
+  background: var(--sw); border: 3px solid transparent; box-shadow: 0 3px 0 var(--sw-d);
+  display: grid; place-items: center;
+}
+.st-sw:active { transform: translateY(3px); box-shadow: none; }
+.st-sw i { width: 14px; height: 14px; opacity: 0; }
+.st-sw.is-on { border-color: var(--text); }
+.st-sw.is-on i {
+  opacity: 1; border-right: 3px solid #fff; border-bottom: 3px solid #fff;
+  transform: rotate(45deg) translate(-2px, -1px); width: 9px; height: 15px;
+}
+
+.st-marks { display: flex; flex-wrap: wrap; gap: 8px; }
+.st-mark {
+  width: 58px; height: 58px; border-radius: var(--r-md); cursor: pointer; padding: 0;
+  display: grid; place-items: center; overflow: hidden;
+  background: var(--bg-600); border: 3px solid var(--line);
+}
+.st-mark:hover { border-color: var(--line-strong); }
+.st-mark.is-on { border-color: var(--electric); background: color-mix(in srgb, var(--electric) 14%, var(--bg-600)); }
+.st-mark .mx svg { width: 42px; height: 45px; }
+
+.st-adv { margin-top: 18px; padding-top: 14px; border-top: 3px dashed var(--line); }
+.st-adv summary { cursor: pointer; font-family: var(--font-display); font-weight: 600; font-size: .95rem; color: var(--text-muted); }
+.st-acts { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 22px; }
+
+/* live preview */
+.st-prev { padding: 16px; }
+.st-prev__h { font-family: var(--font-display); font-weight: 700; font-size: .84rem; color: var(--text-dim); margin-bottom: 12px; }
+.st-fake { border-radius: var(--r-md); overflow: hidden; border: 2px solid var(--line); }
+.st-fake__bar { display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: var(--bg-800); border-bottom: 2px solid var(--line); }
+.st-fake__mark {
+  width: 40px; height: 40px; border-radius: 13px; flex: none; display: grid; place-items: center; overflow: hidden;
+  background: var(--electric); color: #fff; font-family: var(--font-display); font-weight: 700; font-size: .9rem;
+  box-shadow: 0 3px 0 var(--electric);
+}
+.st-fake__mark.is-plain { background: transparent !important; box-shadow: none !important; }
+.st-fake__mark .mx svg { width: 38px; height: 41px; }
+.st-fake__name { font-family: var(--font-display); font-weight: 700; font-size: 1rem; line-height: 1.2; }
+.st-fake__name b { color: var(--electric); }
+.st-fake__body { padding: 16px 12px; display: flex; flex-direction: column; gap: 12px; align-items: center; background: var(--bg-700); }
+.st-fake__chip {
+  padding: 7px 15px; border-radius: var(--r-pill); background: var(--electric); color: #fff;
+  font-family: var(--font-display); font-weight: 700; font-size: .85rem; box-shadow: 0 3px 0 var(--electric);
+}
+.st-fake__btn {
+  width: 100%; text-align: center; padding: 12px; border-radius: var(--r-md);
+  background: var(--electric); color: #fff; font-family: var(--font-display); font-weight: 700;
+  box-shadow: 0 4px 0 var(--electric);
+}
+.st-note { padding: 15px; font-size: .9rem; line-height: 1.65; }
+.st-note b { display: block; font-family: var(--font-display); margin-bottom: 5px; }
+.st-note span { color: var(--text-muted); }
+
+/* a brand mark replaces the JA badge */
+.jx-logo__mark--custom, .hx-brand__mark.jx-logo__mark--custom {
+  background: transparent; box-shadow: none; transform: none; overflow: hidden;
+}
+.jx-brandimg { width: 100%; height: 100%; object-fit: contain; border-radius: 11px; }
+.jx-brandtxt { font-family: var(--font-display); font-weight: 700; }
+
 /* Editor ----------------------------------------------------------- */
 .jx-savebar {
   position: fixed; left: 0; right: 0; bottom: 0; z-index: 60;

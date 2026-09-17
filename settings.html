@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>ตั้งค่าแบรนด์ · JDKS Arena</title>
+  <meta name="theme-color" content="#7C3AED">
+  <script>try{document.documentElement.setAttribute('data-theme',localStorage.getItem('ds-theme')||'light')}catch(e){document.documentElement.setAttribute('data-theme','light')}</script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Kanit:wght@500;600;700&family=Sarabun:wght@400;600;700&family=JetBrains+Mono:wght@600;700&display=swap">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/arena.css">
+</head>
+<body>
+  <div class="ds-gridbg" aria-hidden="true"></div>
+
+  <header class="jx-top" data-topbar data-tag="ตั้งค่า" data-active="teacher"></header>
+
+  <main class="jx-wrap">
+    <p class="jx-eyebrow">ตั้งค่าแบรนด์</p>
+    <h1 class="jx-h2" style="font-size:clamp(1.6rem,4.5vw,2.3rem)">ใส่ชื่อและสีของโรงเรียนคุณ</h1>
+    <p class="jx-lead">สิ่งที่ตั้งไว้ตรงนี้จะไปปรากฏบนจอที่นักเรียนเห็น ทั้งจอผู้เล่นและจอฉาย ทุกครั้งที่คุณเปิดห้องใหม่</p>
+
+    <div class="st-grid">
+      <!-- ── ฟอร์ม ── -->
+      <section class="ds-card st-form" id="form" hidden>
+        <div class="jx-field">
+          <label for="bName">ชื่อที่จะแสดง</label>
+          <input id="bName" class="ds-input" maxlength="40" placeholder="เช่น ห้องเรียน ม.2/3 หรือ โรงเรียนตัวอย่างวิทยา">
+          <p class="st-hint">เว้นว่างไว้ = ใช้ชื่อ JDKS Arena ตามเดิม</p>
+        </div>
+
+        <div class="jx-field">
+          <label>สีหลัก</label>
+          <div class="st-swatches" id="bAccent"></div>
+        </div>
+
+        <div class="jx-field">
+          <label>สัญลักษณ์</label>
+          <div class="st-marks" id="bMark"></div>
+          <p class="st-hint">เลือกตัวการ์ตูนเป็นโลโก้ — ไม่ต้องอัปโหลดไฟล์ ไม่ต้องหาที่ฝากรูป</p>
+        </div>
+
+        <details class="st-adv">
+          <summary>มีโลโก้ของโรงเรียนอยู่แล้ว?</summary>
+          <div class="jx-field" style="margin-top:12px">
+            <label for="bLogo">ลิงก์รูปโลโก้ (https)</label>
+            <input id="bLogo" class="ds-input" type="url" placeholder="https://school.ac.th/logo.png">
+            <p class="st-hint">ต้องเป็นลิงก์ https ที่เปิดดูได้สาธารณะ · ถ้าใส่ไว้จะใช้แทนตัวการ์ตูน · รูปสี่เหลี่ยมจัตุรัสจะสวยที่สุด</p>
+          </div>
+        </details>
+
+        <div class="st-acts">
+          <button class="ds-btn ds-btn--primary" id="save" type="button">บันทึกแบรนด์</button>
+          <button class="ds-btn ds-btn--ghost" id="reset" type="button">ล้างกลับเป็นค่าเริ่มต้น</button>
+        </div>
+      </section>
+
+      <!-- ── ตัวอย่างสด ── -->
+      <aside class="st-side">
+        <div class="ds-card st-prev">
+          <div class="st-prev__h">ตัวอย่างจอนักเรียน</div>
+          <div class="st-fake">
+            <div class="st-fake__bar">
+              <span class="st-fake__mark" id="pvMark">JA</span>
+              <span class="st-fake__name" id="pvName">JDKS <b>Arena</b></span>
+            </div>
+            <div class="st-fake__body">
+              <div class="st-fake__chip" id="pvChip">เลเวล 01 · มือใหม่</div>
+              <div class="st-fake__btn" id="pvBtn">ส่งคำตอบ</div>
+            </div>
+          </div>
+          <p class="st-hint" style="margin-top:12px">จอฉายและแผงคุมเกมจะใช้ชุดเดียวกันนี้</p>
+        </div>
+        <div class="ds-card st-note">
+          <b>ห้องที่เปิดไปแล้วจะไม่เปลี่ยน</b>
+          <span>แต่ละห้องเก็บแบรนด์ไว้ตั้งแต่ตอนเปิด การแก้ตรงนี้จะมีผลกับห้องที่เปิด<b>หลังจากนี้</b>เท่านั้น</span>
+        </div>
+      </aside>
+    </div>
+
+    <div class="jx-empty" id="loading"><div class="jx-empty__ic" data-icon="clock"></div><h3>กำลังโหลด…</h3></div>
+  </main>
+
+  <footer class="jx-foot">JDKS <b>Arena</b> — สนามแข่งแห่งการเรียนรู้</footer>
+
+<script type="module" src="js/ui.js"></script>
+<script type="module" src="js/topbar.js"></script>
+<script type="module" src="js/mascot.js"></script>
+<script type="module" src="js/settings.js"></script>
+</body>
+</html>

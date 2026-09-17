@@ -12,6 +12,7 @@ import {
 import { listMySessions, setSessionStatus } from './session.js';
 import { startIdleTimer } from './idle.js';
 import { dxConfirm, dxPrompt, toast } from './dialog.js';
+import { applyBrand } from './branding.js';
 
 const $ = (s) => document.querySelector(s);
 const state = { user: null, teacher: null, tab: 'mine', mine: [], pub: [], rooms: [], busy: false };
@@ -23,6 +24,7 @@ onAuth(async (user) => {
   if (!user || user.isAnonymous) { location.replace(loginUrl('login')); return; }
   state.user = user;
   state.teacher = (await getTeacher(user.uid)) || (await ensureTeacherProfile(user));
+  applyBrand(state.teacher.brand);
   try {
     startIdleTimer({ key: 'ds-idle-staff', minutes: 60, onIdle: async () => {
       try { localStorage.removeItem('ds-idle-staff'); } catch (_e) {}

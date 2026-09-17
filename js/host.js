@@ -16,6 +16,7 @@ import { scoreQuestionAnswers } from './scoring.js';
 import { icon, hydrateIcons } from './icons.js';
 import { mascot } from './mascot.js';
 import { dxConfirm, dxAlert, toast } from './dialog.js';
+import { applyBrand } from './branding.js';
 
 /* The five answer tiles, mirrored from js/game.js so the teacher's screen
    speaks the same colour/shape language the students are tapping. */
@@ -29,7 +30,7 @@ const tileShape = (i) => shapeIcon(i);
 
 const $ = (s) => document.querySelector(s);
 const HOST_KEY = 'ds-host-session';
-const state = { uid: null, sid: null, session: null, players: [], content: null, questions: {}, packId: undefined };
+const state = { uid: null, sid: null, session: null, players: [], content: null, questions: {}, packId: undefined, brand: null };
 const urlPack = new URLSearchParams(location.search).get('pack');
 let unsubSession = null, unsubPlayers = null, unsubAnswers = null, answersQid = null, timerIv = null;
 const scoredLocal = new Set();
@@ -67,6 +68,8 @@ onAuth(async (user) => {
   if (!user || user.isAnonymous) return showLogin();
   const teacher = (await getTeacher(user.uid)) || (await ensureTeacherProfile(user).catch(() => null));
   if (!teacher) return showLogin();
+  state.brand = teacher.brand || null;
+  applyBrand(state.brand);
   startStaffIdle(); // auto sign-out after 1h idle
   state.uid = user.uid;
   let sid = null; try { sid = localStorage.getItem(HOST_KEY); } catch (_e) {}
@@ -102,7 +105,11 @@ function renderCreate() {
 async function doCreate(demo) {
   $('#mkSession').disabled = true; $('#mkDemo').disabled = true;
   try {
-    const s = await createSession(state.uid, { demo, packId: urlPack || null, title: (state.content && state.content.title) || 'JDKS Arena' });
+    const s = await createSession(state.uid, {
+      demo, packId: urlPack || null,
+      title: (state.content && state.content.title) || 'JDKS Arena',
+      brand: state.brand,          // snapshot — see js/branding.js
+    });
     if (demo) await createDemoPlayers(s.id, 10);
     localStorage.setItem(HOST_KEY, s.id);
     attachSession(s.id);
@@ -172,6 +179,7 @@ async function rotateRoom() {
     const s = await createSession(state.uid, {
       packId: state.packId || urlPack || null,
       title: (state.content && state.content.title) || 'JDKS Arena',
+      brand: state.brand,
     });
     try { localStorage.setItem(HOST_KEY, s.id); } catch (_e) {}
     scoredLocal.clear(); demoAnsweredQ.clear(); lastLbKey = ''; lastStats = {};

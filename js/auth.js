@@ -119,6 +119,11 @@ export async function signInStaff(email, password) {
   return { user: cred.user, teacher, role: role || 'teacher' };
 }
 
+/** Save this teacher's branding. Only the brand block is touched. */
+export async function updateTeacherBrand(uid, brand) {
+  await setDoc(doc(db, 'teachers', uid), { brand }, { merge: true });
+}
+
 export function signOutUser() { return signOut(auth); }
 
 /** Platform-admin role from staff/{uid}, or null. Teachers are NOT staff. */

@@ -70,6 +70,7 @@ function paintTeacher(zone, name, sub) {
       </button>
       <div class="jx-menu" id="jxMenu" role="menu" hidden>
         <a role="menuitem" href="teacher.html">${icon('room')} แผงของฉัน</a>
+        <a role="menuitem" href="settings.html">${icon('sparkles')} ตั้งค่าแบรนด์</a>
         <a role="menuitem" href="community.html">${icon('globe')} คลังเกมสาธารณะ</a>
         <a role="menuitem" href="guide.html">${icon('book')} คู่มือการใช้งาน</a>
         <button role="menuitem" type="button" id="jxSignOut">${icon('leave')} ออกจากระบบ</button>

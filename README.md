@@ -96,7 +96,7 @@ Do this once before the event. The web config is **public** (safe to commit); on
 5. **Firestore Database → Create database** → *Production mode* → region `asia-southeast1` (Singapore).
 6. **Firestore → Rules:** paste the contents of `firestore.rules` → **Publish**.
 7. **Grant staff role:** Firestore → *Start collection* `staff` → *Document ID* = the UID from step 4 → add field `role` = `admin` (string). Add more docs for each host with `role` = `host`.
-8. **Verify:** open `firebase-test.html` → *เริ่มทดสอบ* → all three steps should turn green.
+8. **Verify:** open the site, sign up as a teacher, and open a room — if the room code appears, Auth and Firestore are both wired correctly.
 9. **Try the loop:** open `host.html` → log in → *สร้างเซสชัน* → note the code. Open `index.html` in another tab/device → *เข้าสู่ภารกิจ* → enter the code + a nickname. The host's *joined/online* count should tick up live.
 
 No custom Firestore indexes are required (all queries use equality filters only).
