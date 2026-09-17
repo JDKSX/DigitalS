@@ -23,14 +23,24 @@ import { doc, getDoc, setDoc, serverTimestamp } from 'https://www.gstatic.com/fi
 // "กำลังเชื่อมต่อ" with an empty passport. localStorage is far more reliable on iOS,
 // so we pin persistence to it (with graceful fallbacks). Called BEFORE any
 // sign-in / auth restore so the same store is read and written.
+/** Resolve to `fallback` if `p` has not settled in `ms`.
+    Anything on the sign-in path needs a deadline: a browser that blocks its
+    storage, or a network that drops packets instead of refusing them, leaves
+    these calls pending rather than failing, and a pending promise on this path
+    means a button that never comes back. */
+function withDeadline(p, ms, fallback) {
+  return Promise.race([p, new Promise((res) => setTimeout(() => res(fallback), ms))]);
+}
+const SLOW = Symbol('slow');
+
 let _persistenceReady = null;
 export function ensureLocalPersistence() {
   if (_persistenceReady) return _persistenceReady;
-  _persistenceReady = (async () => {
+  _persistenceReady = withDeadline((async () => {
     for (const p of [browserLocalPersistence, browserSessionPersistence, inMemoryPersistence]) {
       try { await setPersistence(auth, p); return; } catch (_e) { /* try next */ }
     }
-  })();
+  })(), 5000, null);   // blocked storage must not stall sign-in
   return _persistenceReady;
 }
 // Backwards-compatible alias used by the student page.
@@ -77,11 +87,15 @@ export async function signUpTeacher(email, password, displayName = '', org = '')
   if (!password || password.length < 6) throw new Error('รหัสผ่านต้องยาวอย่างน้อย 6 ตัวอักษร');
   if (displayName.length < 2) throw new Error('กรุณากรอกชื่อผู้สอนอย่างน้อย 2 ตัวอักษร');
   await ensureLocalPersistence();
-  const cred = await createUserWithEmailAndPassword(auth, email, password);
+  const cred = await withDeadline(
+    createUserWithEmailAndPassword(auth, email, password), 20000, SLOW);
+  if (cred === SLOW) throw new Error('เชื่อมต่อเซิร์ฟเวอร์ไม่ได้ — เครือข่ายอาจช้าหรือถูกบล็อก ลองใหม่อีกครั้ง หรือเปลี่ยนเครือข่าย');
   try { if (displayName) await updateProfile(cred.user, { displayName }); } catch (_e) {}
   let teacher;
   try {
-    teacher = await ensureTeacherProfile(cred.user, { displayName, org });
+    // Same deadline as sign-in: a profile write that cannot reach Firestore
+    // hangs rather than failing, and must not strand the sign-up button.
+    teacher = await withDeadline(ensureTeacherProfile(cred.user, { displayName, org }), 9000, null);
   } catch (e) {
     // The account now exists but its profile could not be written. Almost always
     // this means the Firestore rules are missing the teachers/{uid} block.
@@ -105,18 +119,31 @@ export async function resetPassword(email) {
     login if missing, so a partially-completed sign-up self-heals. */
 export async function signInStaff(email, password) {
   await ensureLocalPersistence();
-  const cred = await signInWithEmailAndPassword(auth, email.trim(), password);
-  const role = await getRole(cred.user.uid);           // platform admin (optional)
-  let teacher = await getTeacher(cred.user.uid);
-  if (!teacher) {
-    try { teacher = await ensureTeacherProfile(cred.user); }
-    catch (_e) {
-      await signOut(auth);
-      throw new Error('เข้าสู่ระบบไม่สำเร็จ: สร้างโปรไฟล์ผู้สอนไม่ได้ กรุณาลองใหม่');
-    }
-  }
+  const cred = await withDeadline(
+    signInWithEmailAndPassword(auth, email.trim(), password), 20000, SLOW);
+  if (cred === SLOW) throw new Error('เชื่อมต่อเซิร์ฟเวอร์ไม่ได้ — เครือข่ายอาจช้าหรือถูกบล็อก ลองใหม่อีกครั้ง หรือเปลี่ยนเครือข่าย');
   try { localStorage.setItem('ds-idle-staff', String(Date.now())); } catch (_e) {} // fresh idle clock
-  return { user: cred.user, teacher, role: role || 'teacher' };
+
+  // The account is authenticated at this point. Reading the profile must never
+  // be able to hold the sign-in open: it used to leave the button stuck on
+  // "signing in…" forever whenever Firestore could not be reached.
+  const profile = await withDeadline((async () => {
+    const role = await getRole(cred.user.uid);         // platform admin (optional)
+    let teacher = await getTeacher(cred.user.uid);
+    if (!teacher) teacher = await ensureTeacherProfile(cred.user);
+    return { teacher, role: role || 'teacher' };
+  })().catch((e) => ({ error: e })), 9000, SLOW);
+
+  if (profile === SLOW) {
+    // Let them in anyway — the dashboard reads the profile again and reports
+    // clearly if it still cannot. Better than a dead button.
+    return { user: cred.user, teacher: null, role: 'teacher', slowProfile: true };
+  }
+  if (profile.error) {
+    await signOut(auth);
+    throw new Error('เข้าสู่ระบบได้ แต่เปิดโปรไฟล์ผู้สอนไม่ได้ (สิทธิ์ไม่พอ) — ผู้ดูแลระบบต้องอัปเดต Firestore Rules');
+  }
+  return { user: cred.user, teacher: profile.teacher, role: profile.role };
 }
 
 /** Save this teacher's branding. Only the brand block is touched. */

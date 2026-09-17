@@ -62,17 +62,37 @@ function fail(e) {
 function say(msg) { el.err.hidden = true; el.ok.hidden = false; el.ok.textContent = msg; }
 
 /* ---------------- submit ---------------- */
+let submitting = false;
 async function submit(ev) {
   if (ev) ev.preventDefault();
+  if (submitting) return;                 // double-tap on a phone
+  submitting = true;
   el.err.hidden = true; el.ok.hidden = true;
   el.go.disabled = true;
   el.go.textContent = mode === 'signup' ? 'กำลังสมัคร…' : 'กำลังเข้าสู่ระบบ…';
+
+  // Last-resort safety net: whatever goes wrong underneath, the button is
+  // never left dead. auth.js has its own deadline; this one covers the rest.
+  const stuck = setTimeout(() => {
+    if (!submitting) return;
+    submitting = false;
+    el.go.disabled = false;
+    el.go.textContent = mode === 'signup' ? 'สมัครใช้งานฟรี' : 'เข้าสู่ระบบ';
+    el.err.hidden = false;
+    el.err.textContent = 'ใช้เวลานานผิดปกติ — เครือข่ายอาจช้าหรือถูกบล็อก ลองกดอีกครั้ง หรือเปลี่ยนเครือข่าย/เบราว์เซอร์';
+  }, 15000);
+
   try {
     if (mode === 'signup') await signUpTeacher(el.email.value, el.pass.value, el.name.value, el.org.value);
     else await signInStaff(el.email.value, el.pass.value);
+    clearTimeout(stuck);
     el.go.textContent = 'สำเร็จ! กำลังพาไป…';
     location.replace(NEXT);
-  } catch (e) { fail(e); }
+  } catch (e) {
+    clearTimeout(stuck);
+    submitting = false;
+    fail(e);
+  }
 }
 
 el.form.addEventListener('submit', submit);
