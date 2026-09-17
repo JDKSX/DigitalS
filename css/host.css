@@ -283,6 +283,15 @@
   .qb { font-size: .85rem; gap: 5px; min-height: 52px; flex-direction: column; }
   .qb__ic { font-size: 1rem; }
 }
+/* On a phone the room code will not fit beside the tools, so it takes a row
+   of its own — which also makes the one number the class needs to read the
+   most prominent thing on the bar. */
+@media (max-width: 480px) {
+  .hx-bar--top { flex-wrap: wrap; row-gap: 8px; }
+  .hx-room { order: 10; flex: 1 0 100%; margin-left: 0; justify-content: center; }
+  .hx-room b { font-size: 1.32rem; }
+}
+
 @media (prefers-reduced-motion: reduce) { .host-timer.is-low, .hx-skel { animation: none; } }
 
 /* icons inside the console chrome + tiles */

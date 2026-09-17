@@ -290,11 +290,14 @@ textarea.ds-input { padding-block: 12px; min-height: auto; line-height: 1.6; }
 
 /* Login / sign-up page --------------------------------------------- */
 .jx-authpage {
-  width: 100%; padding: clamp(22px, 4vw, 54px) clamp(14px, 3vw, 44px) 80px;
-  display: grid; gap: clamp(26px, 5vw, 64px); align-items: center;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 440px);
+  /* Signing in is one focused task, so the pair is centred rather than
+     stretched: a form 1900px from the text beside it is not "using the
+     space", it is a hole in the middle of the page. */
+  width: 100%; max-width: 1280px; margin-inline: auto;
+  padding: clamp(22px, 4vw, 54px) clamp(14px, 3vw, 44px) 80px;
+  display: grid; gap: clamp(26px, 4vw, 52px); align-items: center;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 430px);
 }
-.jx-authpage__side { max-width: 780px; }
 .jx-authpage__side { min-width: 0; }
 .jx-authpage__h1 {
   font-family: var(--font-display); font-weight: 700; line-height: 1.14; margin: 10px 0 14px;
@@ -506,9 +509,13 @@ textarea.ds-input { padding-block: 12px; min-height: auto; line-height: 1.6; }
 }
 .jx-savebar__msg { flex: 1 1 auto; font-size: .9rem; font-weight: 600; color: var(--text-muted); min-width: 140px; }
 .jx-savebar.is-dirty .jx-savebar__msg { color: var(--warning); }
+/* The page fills the window, but a text field should not: typing a short
+   title into a 1700px box leaves the cursor stranded at one end. Controls
+   stop at a comfortable typing measure and stay left-aligned. */
 .jx-field { margin-bottom: 15px; }
+.jx-field .ds-input, .jx-field textarea.ds-input, .jx-field select.ds-input { max-width: 860px; }
 .jx-field label { display: block; font-family: var(--font-display); font-size: .88rem; font-weight: 600; color: var(--text-muted); margin-bottom: 7px; }
-.jx-row2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 15px; }
+.jx-row2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 420px)); justify-content: start; gap: 15px; }
 .jx-mission { border: 2px solid var(--line); border-radius: var(--r-md); padding: 16px; margin-bottom: 14px; background: var(--bg-600); }
 .jx-mission__head { display: flex; align-items: center; gap: 11px; margin-bottom: 12px; }
 .jx-mission__no { width: 34px; height: 34px; border-radius: 11px; display: grid; place-items: center; flex: none;

@@ -28,6 +28,7 @@
   width: 100%; padding: 11px 13px; border-radius: var(--r-sm);
   background: var(--bg-600); border: 2px solid var(--line-strong); color: var(--text);
   font-family: var(--font-body); font-size: .96rem; line-height: 1.55;
+  max-width: 860px;          /* see .jx-field in arena.css */
 }
 .qf-area { min-height: 70px; resize: vertical; }
 .qf-in:focus, .qf-area:focus, .qf-sel:focus {
@@ -35,7 +36,7 @@
   box-shadow: 0 0 0 4px color-mix(in srgb, var(--electric) 20%, transparent);
 }
 .qf-num { width: 120px; }
-.qf-row2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; }
+.qf-row2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 420px)); justify-content: start; gap: 12px; }
 
 .qf-opts { display: flex; flex-direction: column; gap: 9px; }
 .qf-opt { display: flex; align-items: center; gap: 9px; }
