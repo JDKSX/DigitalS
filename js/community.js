@@ -79,7 +79,7 @@ function render() {
 
   if (!items.length) {
     list.innerHTML = `<div class="jx-empty">${mascot('brain', { size: 110 })}
-      <h3>ไม่พบเกมที่ค้นหา</h3><p>ลองคำอื่น หรือล้างช่องค้นหาเพื่อดูทั้งหมด</p></div>`;
+      <h2>ไม่พบเกมที่ค้นหา</h2><p>ลองคำอื่น หรือล้างช่องค้นหาเพื่อดูทั้งหมด</p></div>`;
     return;
   }
 
@@ -96,7 +96,7 @@ function card(p) {
     <div class="jx-game__art" data-tone="${a.tone}">
       <span data-mascot="${a.kind}" data-size="96" data-tone="${a.tone}"></span>
     </div>
-    <h3 class="jx-pack__title">${esc(p.title)}</h3>
+    <h2 class="jx-pack__title">${esc(p.title)}</h2>
     ${p.subject ? `<div class="jx-pack__subject">${esc(p.subject)}</div>` : ''}
     ${p.description ? `<p class="jx-pack__desc">${esc(p.description)}</p>` : ''}
     <div class="jx-pack__meta">
@@ -128,7 +128,7 @@ function wire() { /* cards are plain links now */ }
 
 function fail(title, sub) {
   $('#list').innerHTML = `<div class="jx-empty">${mascot('clock', { size: 110 })}
-    <h3>${esc(title)}</h3><p>${esc(sub)}</p></div>`;
+    <h2>${esc(title)}</h2><p>${esc(sub)}</p></div>`;
 }
 
 /* ---------------- search ---------------- */

@@ -93,8 +93,11 @@ function render(s) {
   }
 }
 
-/* volatile counts come from the stats doc (fallback to session for old data) */
-function joinedCount(s) { return (stats.playersJoined != null) ? stats.playersJoined : (s.playersJoined || 0); }
+/* Volatile counts come from the stats doc. There is no session-doc fallback
+   for the player count: sessions/{id}.playersJoined is written once at create
+   and never updated, so falling back to it reported a confident 0 — worse than
+   admitting the number has not arrived yet. Null renders as a dash instead. */
+function joinedCount(s) { return (stats.playersJoined != null) ? stats.playersJoined : null; }
 function answeredCountOf(s) { return (stats.answeredCount != null) ? stats.answeredCount : (s.answeredCount || 0); }
 
 /* ---------------- states ---------------- */
@@ -112,7 +115,7 @@ function lobby(s) {
       <div class="pres-join__code">
         <span class="pres-join__lbl">รหัสห้อง</span>
         <div class="pres-code">${s.code}</div>
-        <div class="presenter__count"><b>${joinedCount(s)}</b><span>คนพร้อมแล้ว</span></div>
+        <div class="presenter__count"><b>${joinedCount(s) ?? '—'}</b><span>คนพร้อมแล้ว</span></div>
       </div>
     </div>`;
 }
@@ -137,7 +140,7 @@ function question(s, m) {
     <h1 class="presenter__title pres-q">${text ? esc(text) : (m ? esc(m.titleTh) : 'คำถาม')}</h1>
     <div class="pres-row">
       <div class="pres-timer" id="presTimer">--:--</div>
-      <div class="pres-answered ${allIn ? 'is-all' : ''}"><span id="presAns">${ans}</span> / ${total} <span class="ds-muted">ตอบแล้ว</span></div>
+      <div class="pres-answered ${allIn ? 'is-all' : ''}"><span id="presAns">${ans}</span> / ${total ?? '—'} <span class="ds-muted">ตอบแล้ว</span></div>
     </div>
     ${answerTiles(q, { big: true })}
     ${allIn
@@ -154,7 +157,7 @@ function locked(s, m) {
     <div class="pres-mascot">${mascot('clock', { size: 100 })}</div>
     <p class="presenter__eyebrow presenter__eyebrow--warn">ปิดรับคำตอบ</p>
     <h1 class="presenter__title" style="font-size:clamp(2rem,7vw,4.2rem)">ล็อกคำตอบแล้ว</h1>
-    <div class="pres-answered">${answeredCountOf(s)} / ${total} <span class="ds-muted">ตอบแล้ว</span></div>
+    <div class="pres-answered">${answeredCountOf(s)} / ${total ?? '—'} <span class="ds-muted">ตอบแล้ว</span></div>
     <p class="ds-muted" style="margin-top:8px">เตรียมเฉลย…</p>`;
 }
 

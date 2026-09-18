@@ -54,7 +54,7 @@ onAuth(async (user) => {
 });
 
 function fail(title, sub) {
-  $('#main').innerHTML = `<div class="jx-empty"><div class="jx-empty__ic">${icon('alert')}</div><h3>${esc(title)}</h3><p>${esc(sub)}</p>
+  $('#main').innerHTML = `<div class="jx-empty"><div class="jx-empty__ic">${icon('alert')}</div><h2>${esc(title)}</h2><p>${esc(sub)}</p>
     <a class="ds-btn ds-btn--primary" href="teacher.html">กลับแผงของฉัน</a></div>`;
 }
 

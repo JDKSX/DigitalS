@@ -370,7 +370,7 @@ function renderAnnounceControls(s) {
    that on the button instead of leaving the teacher to discover it. */
 function durationPicker() {
   return `<div class="host-dur">
-    <span class="host-dur__lbl">⏱ เวลาตอบต่อข้อ</span>
+    <span class="host-dur__lbl">${icon('clock')} เวลาตอบต่อข้อ</span>
     <div class="host-dur__opts">
       ${DURATIONS.map((d) => `<button type="button" class="host-dur__opt ${d === selectedDuration ? 'is-on' : ''}" data-dur="${d}">${d === 0 ? 'ไม่ตัดเวลา' : d + ' วิ'}</button>`).join('')}
     </div>

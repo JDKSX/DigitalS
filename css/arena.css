@@ -377,7 +377,7 @@ textarea.ds-input { padding-block: 12px; min-height: auto; line-height: 1.6; }
 
 .jx-empty { text-align: center; padding: clamp(32px, 6vw, 58px) 20px; border: var(--bd-dash); border-radius: var(--r-lg); margin-top: var(--stack); }
 .jx-empty__ic { font-size: 2.8rem; }
-.jx-empty h3 { font-family: var(--font-display); font-weight: 700; margin: 14px 0 6px; }
+.jx-empty h2 { font-family: var(--font-display); font-weight: 700; font-size: 1.16rem; margin: 14px 0 6px; }
 .jx-empty p { color: var(--text-muted); margin: 0 auto 20px; max-width: 46ch; }
 
 .jx-tabs { display: flex; gap: 6px; padding: 6px; background: var(--bg-500); border-radius: var(--r-pill); margin-top: 14px; width: fit-content; max-width: 100%; overflow-x: auto; }

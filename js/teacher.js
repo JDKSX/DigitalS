@@ -52,7 +52,7 @@ function bootFailed(err) {
   try { console.error('[JDKS Arena teacher]', err); } catch (_e) {}
   $('#panel').innerHTML = `<div class="jx-empty">
     <div class="jx-empty__ic">${icon('alert')}</div>
-    <h3>เปิดแผงของคุณไม่สำเร็จ</h3>
+    <h2>เปิดแผงของคุณไม่สำเร็จ</h2>
     <p>${esc((err && err.message) || 'ไม่ทราบสาเหตุ')}<br>
        เข้าสู่ระบบสำเร็จแล้ว แต่โหลดข้อมูลผู้สอนไม่ได้ — ลองใหม่อีกครั้ง หรือออกจากระบบแล้วเข้าใหม่</p>
     <div class="jx-hero__cta">
@@ -112,7 +112,7 @@ function card(p, mine) {
   return `<article class="jx-card jx-pack">
     <div class="jx-pack__top">
       <div style="flex:1">
-        <h3 class="jx-pack__title">${esc(p.title)}</h3>
+        <h2 class="jx-pack__title">${esc(p.title)}</h2>
         ${p.subject ? `<div class="jx-pack__subject">${esc(p.subject)}</div>` : ''}
       </div>
       <span class="jx-chip ${pub ? 'jx-chip--live' : 'jx-chip--draft'}">${icon(pub ? 'globe' : 'lock')} ${pub ? 'เผยแพร่' : 'ส่วนตัว'}</span>
@@ -233,7 +233,7 @@ function roomCard(s) {
   return `<article class="jx-card jx-pack">
     <div class="jx-pack__top">
       <div style="flex:1">
-        <h3 class="jx-pack__title" style="font-family:var(--font-mono);letter-spacing:.14em">${esc(s.code)}</h3>
+        <h2 class="jx-pack__title" style="font-family:var(--font-mono);letter-spacing:.14em">${esc(s.code)}</h2>
         <div class="jx-pack__subject">${esc(s.title || 'ห้องเรียน')}</div>
       </div>
       <span class="jx-chip ${open ? 'jx-chip--live' : ''}">${icon(open ? 'play' : 'flag')} ${open ? 'เปิดอยู่' : 'ปิดแล้ว'}</span>
@@ -288,8 +288,8 @@ async function exportRoom(btn) {
 
 /* ---------------- bits ---------------- */
 function emptyBox(ic, title, sub) {
-  return `<div class="jx-empty"><div class="jx-empty__ic">${icon(ic)}</div><h3>${title}</h3>${sub ? `<p>${sub}</p>` : ''}</div>`;
+  return `<div class="jx-empty"><div class="jx-empty__ic">${icon(ic)}</div><h2>${title}</h2>${sub ? `<p>${sub}</p>` : ''}</div>`;
 }
 function errBox(msg) {
-  return `<div class="jx-empty"><div class="jx-empty__ic">${icon('alert')}</div><h3>เกิดข้อผิดพลาด</h3><p>${esc(msg)}</p></div>`;
+  return `<div class="jx-empty"><div class="jx-empty__ic">${icon('alert')}</div><h2>เกิดข้อผิดพลาด</h2><p>${esc(msg)}</p></div>`;
 }
